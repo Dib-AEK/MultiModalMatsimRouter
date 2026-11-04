@@ -1,0 +1,43 @@
+{
+  "itinerary_validation": "all reachable itineraries validated against schedule and transfer constraints",
+  "baseline_equivalence": {
+    "matching_arrival_and_boardings": 1000,
+    "changed_request_ids": []
+  },
+  "requests": 1000,
+  "reachability": {
+    "both": 170,
+    "neither": 830,
+    "rust_only": 0,
+    "swiss_only": 0
+  },
+  "engines": {
+    "swiss": {
+      "serial_seconds": 4.5985618,
+      "parallel_seconds": 1.8962761,
+      "load_seconds": 10.9285762,
+      "median_query_ms": 0.44125000000000003,
+      "p95_query_ms": 21.53470999999999,
+      "reachable": 170,
+      "median_reachable_query_ms": 4.469099999999999,
+      "median_unreachable_query_ms": 0.3799
+    },
+    "rust": {
+      "serial_seconds": 3.0610435,
+      "parallel_seconds": 1.1518573,
+      "load_seconds": 0.7279756,
+      "median_query_ms": 0.0004,
+      "p95_query_ms": 16.76881499999999,
+      "reachable": 170,
+      "median_reachable_query_ms": 2.3506,
+      "median_unreachable_query_ms": 0.0003
+    }
+  },
+  "paired": {
+    "count": 170,
+    "within_1s": 166,
+    "median_abs_difference_s": 0.0,
+    "max_abs_difference_s": 38406.0,
+    "same_transfer_count": 118
+  }
+}

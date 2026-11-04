@@ -1,0 +1,5 @@
+# Keeps development on stable Rust with formatting and linting tools available.
+[toolchain]
+channel = "stable"
+profile = "minimal"
+components = ["rustfmt", "clippy"]

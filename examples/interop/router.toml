@@ -1,0 +1,15 @@
+# Loads the tiny timetable and demonstrates weighted routing with a bounded batch pool.
+[input]
+format = "matsim"
+path = "timetable.xml"
+coordinates = "projected_meters"
+[preprocessing]
+walking_radius_m = 0
+[routing]
+objective = "generalized_cost"
+[routing.costs]
+walk_per_hour = 5
+wait_per_hour = 2
+other_per_hour = 5
+[execution]
+threads = 12

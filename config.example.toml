@@ -1,0 +1,106 @@
+# Documents every configuration parameter and provides a runnable MATSim example.
+[input]
+# matsim: XML or XML.gz. gtfs: directory or ZIP plus service_date. binary: prepared .mmrt.
+format = "matsim"
+# All paths are relative to this config file, never to the process working directory.
+path = "examples/timetable.xml"
+# Required only for matsim: projected_meters or geographic (x=longitude, y=latitude).
+coordinates = "projected_meters"
+# GTFS alternative (replace the input section; do not retain coordinates):
+# format = "gtfs"
+# path = "feeds/switzerland.zip"
+# service_date = "2026-10-30" # YYYY-MM-DD or YYYYMMDD, in feed service-local time.
+# Binary alternative (replace the input section; no coordinates/service_date):
+# format = "binary"
+# path = "timetable.mmrt"
+
+[preprocessing]
+# Generate directed walking links between every pair within this metric radius; 0 disables.
+walking_radius_m = 250.0
+# Walking speed for generated links, metres/second; must be finite and positive.
+walking_speed_m_s = 1.3
+# Minimum buffer before changing vehicles at the same stop; not charged on initial boarding.
+default_transfer_seconds = 30.0
+# Honor imported directed transfer footpaths and same-stop buffers; false uses only generated walks/default buffer.
+use_explicit_transfers = true
+# 0 disables conservative reachability flags; 1..4096 destination cells. More cells use more RAM.
+# This is safe topological pruning, not full FLASH-TB preprocessing.
+reachability_cells = 0
+
+[routing]
+# earliest_arrival (default) or generalized_cost (time/cost frontiers, including previous mode).
+objective = "earliest_arrival"
+# Optional Eqasim MATSim config, relative to this TOML. Imports effective eqasim:raptor and
+# swissRailRaptor cost settings, replacing ALL manual routing.costs below. Does not import
+# physical walking graphs, stop-search policies, fares or mode-choice utility functions.
+# matsim_config = "scenario/geneva_config.xml"
+# Maximum vehicle boardings, not transfers. 1 means direct services only; allowed range 1..64.
+max_boardings = 5
+# Query horizon measured from departure; routes arriving later are excluded.
+max_duration_seconds = 108000.0
+# false: stop when later departures cannot beat the best arrival. true: scan the full horizon
+# and report all non-dominated (boardings, arrival) pairs; more work, same best-arrival objective.
+return_pareto = false
+
+[routing.search]
+# Exact weighted-search accelerations. All default true; disable individually for differential tests.
+# Build a shared optimistic cost graph and compute reverse destination bounds per query.
+# Bound computation is included in query timing. No destination/result cache is used.
+destination_bounds = true
+# Compare time/cost/mode/first-boarding context against completed earlier boarding rounds.
+cross_round_dominance = true
+# Sort physical transfers once by duration; prune the remainder when even walking cost is too high.
+sorted_transfers = true
+# Index actual platform departures and minimum mode-change costs. Skip infeasible transfers;
+# the next departure is only a bound, never the sole service considered by the search.
+boarding_index = true
+
+[routing.costs]
+# Positive disutility units per hour, i.e. NEGATIVE MATSim utility coefficients.
+# Defaults are uniform 1.0/hour, not Eqasim defaults. Only generalized_cost uses these values.
+walk_per_hour = 1.0
+wait_per_hour = 1.0
+other_per_hour = 1.0 # Used for transit modes absent from modes_per_hour.
+# Fixed penalty per actual vehicle change; first boarding is free.
+transfer_base = 0.0
+# Without a mode matrix, each transfer's penalty can depend on final PT duration since
+# first boarding: clamp(base + rate * duration_hours, min, max), multiplied by transfers.
+# Cannot be combined with mode_transfers, matching SwissRailRaptor's restriction.
+transfer_per_travel_hour = 0.0
+transfer_min = 0.0
+transfer_max = inf
+
+[routing.costs.modes_per_hour]
+# Optional transit-mode overrides. Strings must match the timetable's transport modes.
+# rail = 1.0
+# bus = 1.584
+
+# Optional directional mode-pair offsets, in the SAME utility units as transfer_base.
+# Missing pairs have zero offset; clamp(base + offset, min, max) is charged once per change.
+# [[routing.costs.mode_transfers]]
+# from = "bus"
+# to = "rail"
+# cost = 0.218
+
+[execution]
+# Bounded worker count for preprocessing and parallel independent queries; default 4.
+threads = 4
+# Maximum requests buffered by CLI JSONL batch processing; 1..1000000, default 256.
+batch_size = 256
+# auto (default): adaptive Rayon for cold work; prior-work priority queue for familiar weighted batches.
+# dynamic: persistent worker loops claim one query at a time.
+# rayon: original adaptive splitting; fine_grained: one-query stealing leaves.
+# estimated_work: dynamic queue ordered by inexpensive geometry/timetable work estimates.
+# Prior measured costs can be supplied through Engine::weighted_batch_with_estimates for repeated work.
+scheduling = "auto"
+# Maximum advisory fingerprint/cost entries, grown lazily; 0 disables automatic timing/history.
+# No routes or person attributes are stored. FIFO eviction bounds memory; scores use an EWMA.
+# At least half a weighted batch must have known costs before auto selects the priority queue.
+# For large repeated populations, a higher limit (e.g. 1000000) can improve hit rates.
+work_estimate_capacity = 65536
+
+[cache]
+# Output for `prepare`. To read it later, switch input.format to binary and set input.path.
+path = "timetable.mmrt"
+# Maximum complete binary cache size accepted on read; default 2 GiB.
+max_bytes = 2147483648

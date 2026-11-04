@@ -1,0 +1,62 @@
+# Defines the library, CLI, dependencies, and optimized release profile.
+[package]
+name = "multimodal-matsim-router"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "Extensible, exact public transport routing core for multimodal applications"
+
+[workspace]
+members = ["bridges/matsim-jni", "bridges/router-service", "bridges/router-ffi"]
+resolver = "3"
+
+[features]
+default = []
+# Application binaries can opt into mimalloc; the library never installs a global allocator.
+fast-allocator = ["dep:mimalloc"]
+
+[lib]
+name = "multimodal_matsim_router"
+
+[[bin]]
+name = "mmrouter"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+mimalloc = { version = "0.1.52", optional = true, default-features = false }
+blake3 = "1"
+chrono = "0.4"
+clap = { version = "4", features = ["derive"] }
+csv = "1"
+flate2 = "1"
+postcard = { version = "1", features = ["use-std"] }
+quick-xml = "0.42"
+rayon = "1"
+rstar = "0.12"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.9"
+zip = { version = "2", default-features = false, features = ["deflate"] }
+
+tempfile = "3"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+
+[lints.rust]
+unsafe_code = "forbid"
+
+# Reproducible cross-language core-routing benchmark on a MATSim scenario.
+[[example]]
+name = "geneva-benchmark"
+path = "examples/geneva/benchmark.rs"
+
+[[example]]
+name = "geneva-trips"
+path = "examples/geneva/trips_benchmark.rs"
+
+[[example]]
+name = "geneva-scaling"
+path = "examples/geneva/scaling.rs"

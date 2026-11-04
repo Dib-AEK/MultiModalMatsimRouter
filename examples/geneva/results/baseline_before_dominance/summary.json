@@ -1,0 +1,34 @@
+{
+  "requests": 1000,
+  "reachability": {
+    "both": 170,
+    "neither": 830,
+    "rust_only": 0,
+    "swiss_only": 0
+  },
+  "engines": {
+    "swiss": {
+      "serial_seconds": 4.0877944,
+      "parallel_seconds": 1.7917011,
+      "load_seconds": 11.7937185,
+      "median_query_ms": 0.40754999999999997,
+      "p95_query_ms": 19.934399999999997,
+      "reachable": 170
+    },
+    "rust": {
+      "serial_seconds": 28.6982728,
+      "parallel_seconds": 8.8703896,
+      "load_seconds": 0.781248,
+      "median_query_ms": 23.7591,
+      "p95_query_ms": 67.18120999999994,
+      "reachable": 170
+    }
+  },
+  "paired": {
+    "count": 170,
+    "within_1s": 166,
+    "median_abs_difference_s": 0.0,
+    "max_abs_difference_s": 38406.0,
+    "same_transfer_count": 118
+  }
+}

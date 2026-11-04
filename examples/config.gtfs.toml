@@ -1,0 +1,24 @@
+# Demonstrates importing one service day from a GTFS ZIP; paths are relative to this file.
+[input]
+format = "gtfs"
+path = "../feeds/switzerland.zip"
+service_date = "2026-10-30"
+
+[preprocessing]
+walking_radius_m = 500.0
+walking_speed_m_s = 1.3
+default_transfer_seconds = 0.0
+reachability_cells = 0
+
+[routing]
+max_boardings = 5
+max_duration_seconds = 108000.0
+return_pareto = false
+
+[execution]
+threads = 4
+batch_size = 256
+
+[cache]
+path = "../switzerland.mmrt"
+max_bytes = 2147483648

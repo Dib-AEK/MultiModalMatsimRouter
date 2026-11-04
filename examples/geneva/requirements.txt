@@ -1,0 +1,4 @@
+# Lists Python packages used only for the benchmark analysis and figures.
+numpy>=1.26
+pandas>=2.0
+matplotlib>=3.8

@@ -1,0 +1,11 @@
+# Loads the prepared example cache, bypassing text import and preprocessing.
+[input]
+format = "binary"
+path = "../timetable.mmrt"
+
+[execution]
+threads = 4
+batch_size = 256
+
+[cache]
+path = "../timetable-repacked.mmrt"

@@ -1,0 +1,58 @@
+{
+  "requests": 1000,
+  "reachable_both": 1000,
+  "rust_only": 0,
+  "swiss_only": 0,
+  "neither": 0,
+  "all_returned_paths_validated": true,
+  "engines": {
+    "rust": {
+      "serial_seconds": 3.8427541,
+      "parallel_seconds": 0.7242699,
+      "load_seconds": 2.8718851,
+      "parallel_matches_serial": true,
+      "median_runtime_ms": 1.84695,
+      "p95_runtime_ms": 11.351959999999995,
+      "p99_runtime_ms": 31.967948999999994,
+      "max_runtime_ms": 182.0754,
+      "max_native_cost_error": 1.0658141036401503e-14
+    },
+    "swiss": {
+      "serial_seconds": 10.7005124,
+      "parallel_seconds": 2.1885287,
+      "load_seconds": 51.0003685,
+      "parallel_matches_serial": true,
+      "median_runtime_ms": 5.548349999999999,
+      "p95_runtime_ms": 36.49680999999999,
+      "p99_runtime_ms": 66.80816799999998,
+      "max_runtime_ms": 96.9732,
+      "max_native_cost_error": 0.5720000000000005
+    }
+  },
+  "paired": {
+    "within_1s": 892,
+    "same_cost_within_1e_6": 709,
+    "rust_lower_cost": 291,
+    "swiss_lower_cost": 0,
+    "same_transfer_count": 932
+  },
+  "rust_index": {
+    "allocated_bytes": 2682176,
+    "boarding_events": 274052,
+    "relaxed_edges": 16642,
+    "transfer_entries": 16095
+  },
+  "search_work": {
+    "current": {
+      "connections_scanned": 156053604,
+      "labels_improved": 1049823,
+      "boarding_rounds": 2954,
+      "labels_pruned_by_history": 953551,
+      "labels_pruned_by_bound": 16072179,
+      "transfers_considered": 6226617,
+      "transfers_pruned": 2847395,
+      "path_nodes": 3540928,
+      "bound_settled_stops": 4080175
+    }
+  }
+}

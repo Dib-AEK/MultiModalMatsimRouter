@@ -1,0 +1,260 @@
+{
+  "machine": {
+    "os": "Windows-11-10.0.26200-SP0",
+    "cpu": "AMD Ryzen 7 PRO 6850U with Radeon Graphics     ",
+    "logical_threads": 16,
+    "physical_cores": 8
+  },
+  "route_fingerprint": "ae69997d24e122ff3aa6e6d8b6b6ecd012ee9fa5d4025cb62fbda385482a8160",
+  "all_routes_identical": true,
+  "policies": {
+    "rayon": [
+      {
+        "threads": 1,
+        "seconds": 4.0275939,
+        "queries": 1000,
+        "queries_per_second": 248.2871969788215,
+        "speedup": 1.0,
+        "worker_wall_occupancy": 0.9998894798195769,
+        "query_wall_inflation": 1.0,
+        "longest_parallel_query_ms": 206.9155
+      },
+      {
+        "threads": 2,
+        "seconds": 2.6527726,
+        "queries": 1000,
+        "queries_per_second": 376.964086556081,
+        "speedup": 1.5182582555323438,
+        "worker_wall_occupancy": 0.9829833339516887,
+        "query_wall_inflation": 1.214527423139045,
+        "longest_parallel_query_ms": 220.5269
+      },
+      {
+        "threads": 4,
+        "seconds": 1.327104,
+        "queries": 1000,
+        "queries_per_second": 753.5204475308642,
+        "speedup": 3.034874358000579,
+        "worker_wall_occupancy": 0.9967938812195793,
+        "query_wall_inflation": 1.308648786190534,
+        "longest_parallel_query_ms": 259.6804
+      },
+      {
+        "threads": 8,
+        "seconds": 0.8102363,
+        "queries": 1000,
+        "queries_per_second": 1234.2078477599682,
+        "speedup": 4.970887998970177,
+        "worker_wall_occupancy": 0.8305883615158388,
+        "query_wall_inflation": 1.3162890040979593,
+        "longest_parallel_query_ms": 223.463
+      },
+      {
+        "threads": 12,
+        "seconds": 0.644177,
+        "queries": 1000,
+        "queries_per_second": 1552.3683708049184,
+        "speedup": 6.252309380806828,
+        "worker_wall_occupancy": 0.7820367828437343,
+        "query_wall_inflation": 1.5447190444941303,
+        "longest_parallel_query_ms": 273.9112
+      },
+      {
+        "threads": 16,
+        "seconds": 0.5502994,
+        "queries": 1000,
+        "queries_per_second": 1817.192604607601,
+        "speedup": 7.318913849442686,
+        "worker_wall_occupancy": 0.7662470397798943,
+        "query_wall_inflation": 1.8041039901729363,
+        "longest_parallel_query_ms": 316.4511
+      }
+    ],
+    "dynamic": [
+      {
+        "threads": 1,
+        "seconds": 3.593274,
+        "queries": 1000,
+        "queries_per_second": 278.29773070464427,
+        "speedup": 1.0,
+        "worker_wall_occupancy": 0.9998238226815345,
+        "query_wall_inflation": 1.0,
+        "longest_parallel_query_ms": 178.5784
+      },
+      {
+        "threads": 2,
+        "seconds": 2.679426,
+        "queries": 1000,
+        "queries_per_second": 373.21426305484835,
+        "speedup": 1.3410611078641472,
+        "worker_wall_occupancy": 0.9996677365732168,
+        "query_wall_inflation": 1.3168992743215817,
+        "longest_parallel_query_ms": 261.5422
+      },
+      {
+        "threads": 4,
+        "seconds": 1.4082887,
+        "queries": 1000,
+        "queries_per_second": 710.081675724587,
+        "speedup": 2.5515180232575894,
+        "worker_wall_occupancy": 0.9934038540155433,
+        "query_wall_inflation": 1.3778762361418604,
+        "longest_parallel_query_ms": 281.8327
+      },
+      {
+        "threads": 8,
+        "seconds": 0.7949432,
+        "queries": 1000,
+        "queries_per_second": 1257.9515115042182,
+        "speedup": 4.520164459548808,
+        "worker_wall_occupancy": 0.9786251016854385,
+        "query_wall_inflation": 1.6243129690376934,
+        "longest_parallel_query_ms": 367.637
+      },
+      {
+        "threads": 12,
+        "seconds": 0.6596826,
+        "queries": 1000,
+        "queries_per_second": 1515.88051587233,
+        "speedup": 5.446974044790631,
+        "worker_wall_occupancy": 0.8993667164173905,
+        "query_wall_inflation": 1.8549034369609605,
+        "longest_parallel_query_ms": 407.2338
+      },
+      {
+        "threads": 16,
+        "seconds": 0.6059593,
+        "queries": 1000,
+        "queries_per_second": 1650.2758518600176,
+        "speedup": 5.929893311316453,
+        "worker_wall_occupancy": 0.8044250800294448,
+        "query_wall_inflation": 2.091645643270342,
+        "longest_parallel_query_ms": 398.9183
+      }
+    ],
+    "learned": [
+      {
+        "threads": 1,
+        "seconds": 3.5167986,
+        "queries": 1000,
+        "queries_per_second": 284.3495217496959,
+        "speedup": 1.0,
+        "worker_wall_occupancy": 0.9996987004119092,
+        "query_wall_inflation": 1.0,
+        "longest_parallel_query_ms": 191.0439
+      },
+      {
+        "threads": 2,
+        "seconds": 2.3929647,
+        "queries": 1000,
+        "queries_per_second": 417.89166384276376,
+        "speedup": 1.4696408183539023,
+        "worker_wall_occupancy": 0.9996852861289657,
+        "query_wall_inflation": 1.1782534088398045,
+        "longest_parallel_query_ms": 248.3095
+      },
+      {
+        "threads": 4,
+        "seconds": 1.3230140000000001,
+        "queries": 1000,
+        "queries_per_second": 755.849900303398,
+        "speedup": 2.65817187119713,
+        "worker_wall_occupancy": 0.9995656685720702,
+        "query_wall_inflation": 1.1994651063343496,
+        "longest_parallel_query_ms": 298.0784
+      },
+      {
+        "threads": 8,
+        "seconds": 0.699152,
+        "queries": 1000,
+        "queries_per_second": 1430.3041398723024,
+        "speedup": 5.030091596677117,
+        "worker_wall_occupancy": 0.9986382323302629,
+        "query_wall_inflation": 1.3038743114302223,
+        "longest_parallel_query_ms": 383.5111
+      },
+      {
+        "threads": 12,
+        "seconds": 0.5342092,
+        "queries": 1000,
+        "queries_per_second": 1871.9258298060008,
+        "speedup": 6.5831861375655825,
+        "worker_wall_occupancy": 0.9983789228556387,
+        "query_wall_inflation": 1.5124855552083274,
+        "longest_parallel_query_ms": 449.8734
+      },
+      {
+        "threads": 16,
+        "seconds": 0.5024084,
+        "queries": 1000,
+        "queries_per_second": 1990.412580681374,
+        "speedup": 6.999880177162643,
+        "worker_wall_occupancy": 0.9456212785306117,
+        "query_wall_inflation": 1.8055054603114156,
+        "longest_parallel_query_ms": 509.6582
+      }
+    ],
+    "auto": [
+      {
+        "threads": 1,
+        "seconds": 3.6316327,
+        "queries": 1000,
+        "queries_per_second": 275.35824313951133,
+        "speedup": 1.0,
+        "worker_wall_occupancy": 0.9996404310851426,
+        "query_wall_inflation": 1.0,
+        "longest_parallel_query_ms": 250.5963
+      },
+      {
+        "threads": 2,
+        "seconds": 2.6507823999999998,
+        "queries": 1000,
+        "queries_per_second": 377.24711013623755,
+        "speedup": 1.3700229411512617,
+        "worker_wall_occupancy": 0.9995153356804176,
+        "query_wall_inflation": 1.2530749181429532,
+        "longest_parallel_query_ms": 263.3257
+      },
+      {
+        "threads": 4,
+        "seconds": 1.2155245,
+        "queries": 1000,
+        "queries_per_second": 822.6901226589839,
+        "speedup": 2.987708351415377,
+        "worker_wall_occupancy": 0.9992098707425604,
+        "query_wall_inflation": 1.2344930976893111,
+        "longest_parallel_query_ms": 319.8192
+      },
+      {
+        "threads": 8,
+        "seconds": 0.6784555,
+        "queries": 1000,
+        "queries_per_second": 1473.9360208591427,
+        "speedup": 5.352794251059945,
+        "worker_wall_occupancy": 0.9984812155764072,
+        "query_wall_inflation": 1.280003984644014,
+        "longest_parallel_query_ms": 359.2091
+      },
+      {
+        "threads": 12,
+        "seconds": 0.5242231,
+        "queries": 1000,
+        "queries_per_second": 1907.584766867389,
+        "speedup": 6.927647217377486,
+        "worker_wall_occupancy": 0.9975106169905287,
+        "query_wall_inflation": 1.5229376109238884,
+        "longest_parallel_query_ms": 449.6218
+      },
+      {
+        "threads": 16,
+        "seconds": 0.5089427,
+        "queries": 1000,
+        "queries_per_second": 1964.8577334933777,
+        "speedup": 7.1356415958024355,
+        "worker_wall_occupancy": 0.938373400409029,
+        "query_wall_inflation": 1.840380351861846,
+        "longest_parallel_query_ms": 512.1494
+      }
+    ]
+  }
+}

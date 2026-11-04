@@ -1,0 +1,85 @@
+{
+  "measurements": [
+    {
+      "load_seconds": 2.9531237,
+      "median_seconds": 3.8567873,
+      "queries": 1000,
+      "route_fingerprint": "ae69997d24e122ff3aa6e6d8b6b6ecd012ee9fa5d4025cb62fbda385482a8160",
+      "samples_seconds": [
+        3.8708280999999998,
+        3.8567873,
+        3.7682567000000002
+      ],
+      "threads": 1,
+      "warmup_batches": 2
+    },
+    {
+      "load_seconds": 4.9904827,
+      "median_seconds": 2.6792612,
+      "queries": 1000,
+      "route_fingerprint": "ae69997d24e122ff3aa6e6d8b6b6ecd012ee9fa5d4025cb62fbda385482a8160",
+      "samples_seconds": [
+        2.7107516,
+        2.5317286,
+        2.6792612
+      ],
+      "threads": 2,
+      "warmup_batches": 2
+    },
+    {
+      "load_seconds": 5.1322676,
+      "median_seconds": 1.3095906,
+      "queries": 1000,
+      "route_fingerprint": "ae69997d24e122ff3aa6e6d8b6b6ecd012ee9fa5d4025cb62fbda385482a8160",
+      "samples_seconds": [
+        1.392253,
+        1.2097272000000001,
+        1.3095906
+      ],
+      "threads": 4,
+      "warmup_batches": 2
+    },
+    {
+      "load_seconds": 5.2005081,
+      "median_seconds": 0.7951194,
+      "queries": 1000,
+      "route_fingerprint": "ae69997d24e122ff3aa6e6d8b6b6ecd012ee9fa5d4025cb62fbda385482a8160",
+      "samples_seconds": [
+        0.7882297,
+        0.903946,
+        0.7951194
+      ],
+      "threads": 8,
+      "warmup_batches": 2
+    },
+    {
+      "load_seconds": 4.8058758,
+      "median_seconds": 0.6300508,
+      "queries": 1000,
+      "route_fingerprint": "ae69997d24e122ff3aa6e6d8b6b6ecd012ee9fa5d4025cb62fbda385482a8160",
+      "samples_seconds": [
+        0.6757666,
+        0.6107849,
+        0.6300508
+      ],
+      "threads": 12,
+      "warmup_batches": 2
+    },
+    {
+      "load_seconds": 4.8285177,
+      "median_seconds": 0.5914518,
+      "queries": 1000,
+      "route_fingerprint": "ae69997d24e122ff3aa6e6d8b6b6ecd012ee9fa5d4025cb62fbda385482a8160",
+      "samples_seconds": [
+        0.5914518,
+        0.5313449,
+        0.6466946
+      ],
+      "threads": 16,
+      "warmup_batches": 2
+    }
+  ],
+  "note": "Each pool loads identical inputs and warms full batches; routing and reconstruction timed; checking/drop outside timing; no result cache.",
+  "repeats": 3,
+  "warmup_batches": 2
+}

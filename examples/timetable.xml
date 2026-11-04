@@ -1,0 +1,16 @@
+<!-- Provides a tiny two-service MATSim timetable for preparation and routing examples. -->
+<transitSchedule>
+  <transitStops>
+    <stopFacility id="A" x="0" y="0" name="Origin" />
+    <stopFacility id="B" x="1000" y="0" name="Interchange" />
+    <stopFacility id="C" x="2000" y="0" name="Destination" />
+  </transitStops>
+  <transitLine id="bus-1"><transitRoute id="outbound"><transportMode>bus</transportMode>
+    <routeProfile><stop refId="A" departureOffset="00:00:00"/><stop refId="B" arrivalOffset="00:05:00"/></routeProfile>
+    <departures><departure id="morning" departureTime="08:00:00"/></departures>
+  </transitRoute></transitLine>
+  <transitLine id="rail-1"><transitRoute id="outbound"><transportMode>rail</transportMode>
+    <routeProfile><stop refId="B" departureOffset="00:00:00"/><stop refId="C" arrivalOffset="00:04:00"/></routeProfile>
+    <departures><departure id="morning" departureTime="08:06:00"/></departures>
+  </transitRoute></transitLine>
+</transitSchedule>

@@ -1,0 +1,39 @@
+{
+  "requests": 1000,
+  "reachable_both": 1000,
+  "rust_only": 0,
+  "swiss_only": 0,
+  "neither": 0,
+  "all_returned_paths_validated": true,
+  "engines": {
+    "rust": {
+      "serial_seconds": 10.5185152,
+      "parallel_seconds": 4.0397585,
+      "load_seconds": 2.8642358,
+      "parallel_matches_serial": true,
+      "median_runtime_ms": 2.3516500000000002,
+      "p95_runtime_ms": 38.90953,
+      "p99_runtime_ms": 121.42421699999976,
+      "max_runtime_ms": 1337.1621,
+      "max_native_cost_error": 1.0658141036401503e-14
+    },
+    "swiss": {
+      "serial_seconds": 9.1470353,
+      "parallel_seconds": 3.1868679,
+      "load_seconds": 48.5491238,
+      "parallel_matches_serial": true,
+      "median_runtime_ms": 4.9942,
+      "p95_runtime_ms": 30.02747499999998,
+      "p99_runtime_ms": 51.139101,
+      "max_runtime_ms": 71.735,
+      "max_native_cost_error": 0.5720000000000005
+    }
+  },
+  "paired": {
+    "within_1s": 892,
+    "same_cost_within_1e_6": 709,
+    "rust_lower_cost": 291,
+    "swiss_lower_cost": 0,
+    "same_transfer_count": 932
+  }
+}

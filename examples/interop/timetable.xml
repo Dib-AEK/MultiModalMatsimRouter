@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Provides a tiny, dependency-free schedule for Java/Python integration examples. -->
+<transitSchedule>
+  <transitStops>
+    <stopFacility id="A" x="0" y="0" name="Origin"/>
+    <stopFacility id="B" x="1000" y="0" name="Destination"/>
+    <stopFacility id="C" x="10000" y="0" name="Disconnected"/>
+  </transitStops>
+  <transitLine id="L"><transitRoute id="R">
+    <transportMode>bus</transportMode>
+    <routeProfile>
+      <stop refId="A" departureOffset="00:00:00"/>
+      <stop refId="B" arrivalOffset="00:10:00"/>
+    </routeProfile>
+    <departures><departure id="D" departureTime="08:00:00" vehicleRefId="bus"/></departures>
+  </transitRoute></transitLine>
+</transitSchedule>

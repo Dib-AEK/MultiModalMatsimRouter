@@ -1,0 +1,84 @@
+{
+  "requests": 1000,
+  "reachable_both": 1000,
+  "rust_only": 0,
+  "swiss_only": 0,
+  "neither": 0,
+  "all_returned_paths_validated": true,
+  "engines": {
+    "rust": {
+      "serial_seconds": 3.6438684,
+      "parallel_seconds": 0.7000552,
+      "load_seconds": 2.8541144000000003,
+      "parallel_matches_serial": true,
+      "median_runtime_ms": 1.73635,
+      "p95_runtime_ms": 10.248414999999987,
+      "p99_runtime_ms": 29.352788,
+      "max_runtime_ms": 184.2229,
+      "max_native_cost_error": 1.0658141036401503e-14
+    },
+    "swiss": {
+      "serial_seconds": 10.7572892,
+      "parallel_seconds": 1.8296701,
+      "load_seconds": 48.7485577,
+      "parallel_matches_serial": true,
+      "median_runtime_ms": 5.6287,
+      "p95_runtime_ms": 37.09613999999999,
+      "p99_runtime_ms": 62.540247999999984,
+      "max_runtime_ms": 88.7089,
+      "max_native_cost_error": 0.5720000000000005
+    }
+  },
+  "paired": {
+    "within_1s": 892,
+    "same_cost_within_1e_6": 709,
+    "rust_lower_cost": 291,
+    "swiss_lower_cost": 0,
+    "same_transfer_count": 932
+  },
+  "rust_index": {
+    "allocated_bytes": 2682176,
+    "boarding_events": 274052,
+    "relaxed_edges": 16642,
+    "transfer_entries": 16095
+  },
+  "search_work": {
+    "current": {
+      "connections_scanned": 156053604,
+      "labels_improved": 1049823,
+      "boarding_rounds": 2954,
+      "labels_pruned_by_history": 953551,
+      "labels_pruned_by_bound": 16072179,
+      "transfers_considered": 6226617,
+      "transfers_pruned": 2847395,
+      "path_nodes": 3540928,
+      "bound_settled_stops": 4080175
+    },
+    "before": {
+      "connections_scanned": 214534334,
+      "labels_improved": 5805399,
+      "boarding_rounds": null,
+      "labels_pruned_by_history": null,
+      "labels_pruned_by_bound": null,
+      "transfers_considered": null,
+      "transfers_pruned": null,
+      "path_nodes": null,
+      "bound_settled_stops": null
+    }
+  },
+  "baseline": {
+    "path": "C:\\Users\\dabdelkader\\Desktop\\work\\codes\\MultiModalRouter\\examples\\geneva\\trip_results_12_baseline",
+    "quality": {
+      "same_cost": 1000,
+      "same_arrival_and_boardings": 1000,
+      "same_legs": 1000
+    },
+    "old_threads": 12,
+    "new_threads": 12,
+    "old_serial_seconds": 11.84452,
+    "old_parallel_seconds": 2.9586295,
+    "old_max_query_ms": 1533.5874,
+    "serial_speedup": 3.25053451436391,
+    "parallel_speedup": 4.226280299039275
+  }
+}

@@ -1,0 +1,37 @@
+# Demonstrates the weighted objective on the tiny bundled timetable with Geneva-style coefficients.
+[input]
+format = "matsim"
+path = "timetable.xml"
+coordinates = "projected_meters"
+
+[preprocessing]
+walking_radius_m = 0.0
+default_transfer_seconds = 5.0
+
+[routing]
+objective = "generalized_cost"
+max_boardings = 5
+# To import effective Eqasim coefficients instead of the manual values below:
+# matsim_config = "../../cmdp_scenario/geneva_config.xml"
+
+[routing.costs]
+walk_per_hour = 1.97
+wait_per_hour = 1.72
+other_per_hour = 1.584
+transfer_base = 0.0
+transfer_min = 0.0
+transfer_max = inf
+
+[routing.costs.modes_per_hour]
+rail = 1.0
+bus = 1.584
+tram = 1.122
+subway = 1.122
+
+[[routing.costs.mode_transfers]]
+from = "bus"
+to = "rail"
+cost = 0.218
+
+[execution]
+threads = 4

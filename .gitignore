@@ -1,0 +1,47 @@
+# Excludes generated build products, logs, and local binary timetable caches.
+/target/
+*.log
+*.mmrt
+
+# Excludes generated scenario copies and benchmark compiler products.
+/examples/geneva/results/benchmark_schedule.xml.gz
+/examples/geneva/results/java-classes/
+__pycache__/
+*.egg-info/
+/python/build/
+/python/dist/
+/examples/geneva/trip_smoke/
+/examples/geneva/*/benchmark_schedule.xml.gz
+/examples/geneva/*/java-classes/
+/examples/geneva/*/baseline-router.exe
+
+# Build products and local application state, on all supported platforms.
+*.class
+*.jar
+*.dll
+*.so
+*.dylib
+*.exe
+*.jfr
+.venv/
+venv/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Credentials and private machine-specific configuration.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.local.toml
+
+# Keep benchmark reports/figures, but do not publish scenario-derived trip records or local paths.
+/examples/geneva/**/*.jsonl
+/examples/geneva/**/*.csv
+/examples/geneva/**/*metadata.json
+/examples/geneva/**/transfers.json
+/examples/geneva/**/profile.json
+/examples/geneva/**/router.toml

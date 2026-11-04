@@ -1,0 +1,4 @@
+# Normalize source across platforms; preserve generated figures as produced by plotting tools.
+* text=auto
+*.png binary
+*.svg -whitespace
