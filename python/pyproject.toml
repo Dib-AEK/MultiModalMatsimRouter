@@ -1,6 +1,6 @@
 # Packages the dependency-free Python client; the native library is built separately.
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=68", "wheel>=0.45"]
 build-backend = "setuptools.build_meta"
 [project]
 name = "multimodal-matsim-router"
@@ -11,3 +11,5 @@ readme = "README.md"
 license = {text = "MIT"}
 [tool.setuptools.packages.find]
 where = ["src"]
+[tool.setuptools.package-data]
+multimodal_router = ["_native/*.dll", "_native/*.so", "_native/*.dylib"]

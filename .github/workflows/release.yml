@@ -1,0 +1,67 @@
+# Builds and verifies host-native Python/Java/CLI downloads before publishing a tagged release.
+name: Binary releases
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            platform: windows-x86_64
+          - os: ubuntu-22.04
+            platform: linux-x86_64
+          - os: macos-15
+            platform: macos-aarch64
+          - os: macos-15-intel
+            platform: macos-x86_64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Prepare build tools
+        run: |
+          rustup update stable --no-self-update
+          rustup default stable
+          python -m pip install --upgrade pip setuptools wheel
+      - name: Build and test language interfaces
+        run: python tools/build.py --test
+      - name: Package and test installed binary wheel
+        run: python tools/package_release.py --skip-build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: binaries-${{ matrix.platform }}
+          path: target/distributions/*
+          if-no-files-found: error
+          retention-days: 7
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: binaries-*
+          path: release-assets
+          merge-multiple: true
+      - name: Publish verified downloads
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$RELEASE_TAG" release-assets/* --verify-tag --title "MultiModalMatsimRouter $RELEASE_TAG" --notes-file docs/release-notes.md

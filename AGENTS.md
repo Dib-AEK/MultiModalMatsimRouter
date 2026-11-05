@@ -104,6 +104,13 @@ search-loop timing. Do not add fake test results or guessed benchmark numbers.
 
 Keep this guide current as implementation decisions and supported features change.
 
+## Binary distributions
+`tools/package_release.py` stages native libraries without changing the source Python package,
+builds platform-tagged ctypes wheels, tests a clean installation outside the checkout, and packages
+host-specific Java jars, native libraries, CLI, examples and checksums. Never label a binary wheel
+`any` or claim manylinux compatibility without a suitable build/audit. The release workflow builds
+and tests each OS/architecture before publishing a tag; no compiler is required by release users.
+
 ## Weighted routing and observed-trip comparisons
 The optional generalized-cost engine supports distinct walking, waiting and in-vehicle rates,
 directional mode-pair transfer penalties or duration-dependent transfer penalties. All effective

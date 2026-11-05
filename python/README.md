@@ -1,6 +1,11 @@
 <!-- Introduces installation and the native-library requirement for the Python client. -->
 # MultiModalMatsimRouter Python client
 
+To use without Rust, install a platform wheel from
+[GitHub Releases](https://github.com/Dib-AEK/MultiModalMatsimRouter/releases/latest).
+It includes the native engine; no library path is required. See
+[binary installation](../docs/binary-distribution.md) for supported systems.
+
 Install locally with `python -m pip install -e ./python` from the router checkout. Build native libraries
 with `python tools/build.py --test`. For a regular deployed installation, set `MMROUTER_LIBRARY`
 to the absolute native-library path or pass `library=` (Windows: `multimodal_router.dll`,

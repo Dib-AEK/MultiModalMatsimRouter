@@ -5,7 +5,14 @@ Public-transport routing in Rust, usable from **Python**, **Java**, **MATSim**, 
 The project provides scheduled routing with walking, waiting, transfers and configurable mode costs,
 using an immutable timetable shared across concurrent routing workers.
 
-## Install from GitHub
+## Use without Rust
+
+Download a compiled Python wheel or platform ZIP from
+[GitHub Releases](https://github.com/Dib-AEK/MultiModalMatsimRouter/releases/latest).
+Wheels include the native engine; Java jars in the ZIP include JNI. No Rust/Cargo or compiler
+is needed at runtime. See [installation and examples](docs/binary-distribution.md).
+
+## Build from source
 
 Prerequisites: stable Rust/Cargo, Python **3.11+** for the build helper, and JDK **17+** for the
 standalone Java client. MATSim integration uses JDK **25**. Windows also needs MSVC C++ Build Tools;
