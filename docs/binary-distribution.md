@@ -6,7 +6,10 @@ Download a wheel or platform ZIP from
 No Rust/Cargo or C++ compiler is needed. The repository is private, so GitHub login and repository
 access are currently required. This is a GitHub distribution, not a package published to PyPI.
 
-Choose the package matching your OS and processor:
+Only attached release assets are available to download. Version 0.2.0 initially provides tested
+Windows x64 packages. Linux/macOS builds are configured, but GitHub Actions currently fails before
+creating any jobs in this repository; those platform binaries have not been built or published.
+The build targets and their runtime requirements are:
 
 | Archive suffix | Runtime |
 | --- | --- |
@@ -80,5 +83,6 @@ permissions, run `chmod +x bin/mmrouter` first.
 
 Each release asset has an adjacent `.sha256`; the ZIP also contains `SHA256SUMS.txt` for its files.
 Build locally with `python tools/package_release.py` to reproduce the build/test/package procedure.
-Tagged `v*` commits trigger the release workflow; it publishes only after every platform passes
-Rust, Python, Java and installed-wheel tests.
+Tagged `v*` commits trigger the release workflow; automated publication occurs only after every
+platform passes Rust, Python, Java and installed-wheel tests. A tested host package may also be
+uploaded manually, with its platform and validation scope stated in the release notes.
