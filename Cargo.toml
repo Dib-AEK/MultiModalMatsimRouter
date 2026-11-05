@@ -7,7 +7,7 @@ license = "MIT"
 description = "Extensible, exact public transport routing core for multimodal applications"
 
 [workspace]
-members = ["bridges/matsim-jni", "bridges/router-service", "bridges/router-ffi"]
+members = ["java/native", "bridges/router-service", "bridges/router-ffi"]
 resolver = "3"
 
 [features]

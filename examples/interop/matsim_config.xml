@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Demonstrates config-relative schedule loading and Eqasim/SwissRailRaptor parameters. -->
+<config>
+  <module name="transit"><param name="useTransit" value="true"/><param name="transitScheduleFile" value="timetable.xml"/></module>
+  <module name="global"><param name="numberOfThreads" value="12"/></module>
+  <module name="routing"><parameterset type="teleportedModeParameters">
+    <param name="mode" value="walk"/><param name="teleportedModeSpeed" value="1.3"/><param name="beelineDistanceFactor" value="1.3"/>
+  </parameterset></module>
+  <module name="transitRouter"><param name="searchRadius" value="10"/><param name="extensionRadius" value="200"/>
+    <param name="maxBeelineWalkConnectionDistance" value="100"/><param name="additionalTransferTime" value="12"/>
+    <param name="directWalkFactor" value="3"/>
+  </module>
+  <module name="eqasim:raptor"><param name="travelTimeBus_u_h" value="-5"/><param name="travelTimeOther_u_h" value="-5"/>
+    <param name="walkTime_u_h" value="-5"/><param name="waitTime_u_h" value="-2"/><param name="perTransfer_u" value="0"/>
+  </module>
+</config>

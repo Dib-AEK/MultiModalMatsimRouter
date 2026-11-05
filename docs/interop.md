@@ -1,6 +1,53 @@
 <!-- Documents shared native APIs, clone/build workflow, protocol and application ownership. -->
 # Python, Java and MATSim integration
 
+## Asynchronous loading and shared workers (client API 2)
+
+Current Java layout is `java/client` (standalone API), `java/native` (shared JNI), and
+`java/matsim` (MATSim-config facade, numeric snapshot bridge and examples). Python code and its
+small threaded example are under `python/`. See [Java module usage](../java/README.md),
+[MATSim configuration tools](../java/matsim/README.md) and [Python loading options](../python/README.md).
+
+`Router.load(file)` / `Router.start(file)` in Python and `NativeRouter.load(file, library)` in
+Java return immediately, loading/preprocessing on a bounded background executor. A first query
+waits automatically; explicit `wait()` / `awaitReady()` is optional. Ready checks do not block.
+Loading errors propagate on the first wait/query. Close during startup arranges cleanup after a
+running load finishes. One session owns the engine; `worker()` views share it. Do not initialize
+an engine per routing thread. Query workspaces are native thread-local state, while timetable,
+cost indices and the coordinate stop index are shared and read-only.
+
+Inputs auto-detect router TOML, MATSim config XML, MATSim schedule XML/XML.gz, GTFS folders/ZIP,
+and `.mmrt` binary timetables. Explicit `format` can be `config`, `matsim_config`, `matsim`, `gtfs`
+or `binary`. GTFS additionally requires `service_date`. Partial `parameters` override imported
+settings in `preprocessing`, `routing`, `execution`, `cache`, and `stop_search` sections. Raw
+MATSim inputs can declare `coordinates`; GTFS coordinates come from the feed. Read the executable
+examples before processing a full scenario:
+
+- [Python background startup and shared threads](../python/examples/async_routing.py)
+- [Java MATSim-config background startup](../java/matsim/examples/AsyncMatsimExample.java)
+- [Tiny MATSim config](../examples/interop/matsim_config.xml), with a config-relative schedule
+- [Tiny synthetic GTFS](../examples/interop/gtfs/stops.txt), active on 2026-11-05
+
+`route_coordinates` / `routeCoordinatesJson` accepts origin/destination coordinates and a
+departure time. It performs indexed access/egress stop searches, then weighted PT routing,
+retrying up to five wider radii. Direct-walk preference yields successful null for the PT result;
+the host decides whether to emit a walk-only route. Coordinate units follow the timetable.
+Use schedule/config inputs when MATSim stop access/egress attributes matter: the source-neutral
+`.mmrt` cache does not contain those extra host attributes. Infinite cost bounds appear as null
+in JSON metadata; the native cost model retains its actual unbounded values.
+
+The result-envelope protocol remains version 1 for backward compatibility. New clients also
+require client API 2 (`mmr_api_version` / JNI `apiVersion`) so a stale library is rejected before
+the new loading entry points are used. Old numeric MATSim calls and the library name are unchanged.
+Build artifacts now use client version 0.2.0, including `mmrouter-matsim-0.2.0.jar`.
+
+The raw open operation also accepts optional `format` and `parameters`, and a coordinate query is:
+
+```json
+{"op":"open","config":"/scenario/config.xml","format":"matsim_config","parameters":{"execution":{"threads":12}}}
+{"op":"route_coordinates","origin":[2538000,1152400],"destination":[2535000,1153500],"departure":"08:00:00"}
+```
+
 Keep **MultiModalMatsimRouter in a separate repository**, cloned locally as `MultiModalRouter`.
 The algorithm, readers, native boundaries, configuration, standalone clients and their tests live
 here. MATSim module bindings, live scenario snapshotting, route reconstruction and mode-choice/cache
@@ -17,7 +64,7 @@ operating system/architecture; a Windows DLL cannot be used as a Linux SO.
 git clone https://github.com/Dib-AEK/MultiModalMatsimRouter.git MultiModalRouter
 cd MultiModalRouter
 python tools/build.py --test
-python -m pip install ./python
+python -m pip install -e ./python
 ```
 
 The helper finds Cargo on PATH or under your home `.cargo/bin`, builds release libraries using
@@ -27,16 +74,17 @@ Cargo.lock, builds the standalone Java jar, and optionally tests all language bo
 | --- | --- |
 | `target/release/multimodal_router.dll` | Python/C interface |
 | `target/release/matsim_pt_router.dll` | Java JNI, including fast MATSim calls |
-| `target/java/mmrouter-java-0.1.0.jar` | Standalone Java client without Java dependencies |
+| `target/java/mmrouter-java-0.2.0.jar` | Standalone Java client without Java dependencies |
 | `target/native-build.json` | Platform, protocol version and SHA-256 hashes |
 
 Linux names are `libmultimodal_router.so` / `libmatsim_pt_router.so`; macOS uses `.dylib`.
 Deployment needs the language client and matching library, not a compiler/source checkout/server.
-Pin a router revision in deployment automation. Current package/API versions are 0.1.0/protocol 1.
+Pin a router revision in deployment automation. Current package/API versions are 0.2.0/protocol 1.
 
 ## Python
 
-Set `MMROUTER_LIBRARY` or pass `library=`. The dependency-free client loads an explicit library
+Editable/source checkouts discover their own native build. Installed deployments can instead
+set `MMROUTER_LIBRARY` or pass `library=`. The dependency-free client loads an explicit library
 path, frees every response buffer in a finally block, and provides deterministic/context-manager
 close plus finalization of abandoned handles.
 
@@ -80,7 +128,7 @@ try (var router = new NativeRouter(Path.of("examples/interop/router.toml"),
 }
 ```
 
-Compile against `target/java/mmrouter-java-0.1.0.jar`. Methods return versioned JSON envelopes,
+Compile against `target/java/mmrouter-java-0.2.0.jar`. Methods return versioned JSON envelopes,
 which your application's JSON library can parse. Initialization failures throw Java exceptions;
 query errors return error envelopes. `batchJson`, `weightedBatchJson` and `requestJson` expose
 the same protocol. Use try-with-resources. Close is idempotent; in-flight native searches retain

@@ -9,6 +9,11 @@ pub extern "C" fn mmr_protocol_version() -> i32 {
     mmrouter_service::PROTOCOL_VERSION
 }
 
+#[unsafe(no_mangle)]
+pub extern "C" fn mmr_api_version() -> i32 {
+    mmrouter_service::CLIENT_API_VERSION
+}
+
 /// Executes a version-1 request; the returned UTF-8 JSON string must be freed exactly once.
 /// # Safety
 /// `input` must point to a valid NUL-terminated UTF-8 string for this call's duration.

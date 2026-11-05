@@ -6,6 +6,30 @@ use jni::{
 };
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_org_multimodalmatsim_router_NativeRouter_apiVersion(
+    _: JNIEnv,
+    _: JClass,
+) -> jint {
+    mmrouter_service::CLIENT_API_VERSION
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_org_multimodalmatsim_router_NativeRouter_openInput(
+    mut env: JNIEnv,
+    _: JClass,
+    path: JString,
+    format: JString,
+    parameters: JString,
+) -> jlong {
+    super::boundary(&mut env, |env| {
+        let path: String = env.get_string(&path)?.into();
+        let format: String = env.get_string(&format)?.into();
+        let parameters: String = env.get_string(&parameters)?.into();
+        mmrouter_service::open_input(&path, &format, serde_json::from_str(&parameters)?)
+    })
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_org_multimodalmatsim_router_NativeRouter_protocolVersion(
     _: JNIEnv,
     _: JClass,

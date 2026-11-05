@@ -4,10 +4,15 @@
 ## Purpose and scope
 Build a readable, extensible Rust routing library, beginning with scheduled public transport.
 The CLI is a local development tool. The MATSim integration milestone is now authorized.
-`bridges/matsim-jni` is a separate workspace crate holding JNI and snapshot protocol concerns.
+`java/native` is a separate workspace crate holding JNI and snapshot protocol concerns.
 `bridges/router-service` owns the safe shared application protocol and engine registry;
 `bridges/router-ffi` owns C pointer lifetimes for Python's dependency-free ctypes client.
 `python` and `java` contain standalone clients. Keep either runtime out of the core algorithm.
+Java sources are organized into `java/client`, shared JNI under `java/native`, and MATSim facade,
+examples and snapshot bridge under `java/matsim`. Client API 2 adds input auto-detection, partial
+parameter overrides, asynchronous sessions and lightweight worker views. Loading must never copy
+an engine per caller thread. Test close-before-ready, startup failure, mixed batch errors and
+MATSim relative paths/coefficients, including explicit zero transfers and stop access attributes.
 Never put transport-protocol concerns into the routing algorithm. The core still forbids unsafe code.
 
 ## Architecture and dependency direction

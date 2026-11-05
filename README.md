@@ -15,10 +15,10 @@ Linux/macOS need their standard native build toolchain. Build on the platform wh
 git clone https://github.com/Dib-AEK/MultiModalMatsimRouter.git MultiModalRouter
 cd MultiModalRouter
 python tools/build.py --test
-python -m pip install ./python
+python -m pip install -e ./python
 ```
 
-This builds both native libraries and `target/java/mmrouter-java-0.1.0.jar`, then tests the Rust,
+This builds both native libraries and `target/java/mmrouter-java-0.2.0.jar`, then tests the Rust,
 Python and Java interfaces. Deployment needs the matching compiled library and language client;
 the simulation jar can bundle its library. No Rust toolchain is required at runtime.
 
@@ -29,8 +29,9 @@ The included example timetable works immediately, without downloading a scenario
 ```python
 from multimodal_router import Router
 
-with Router("examples/interop/router.toml",
-            library="target/release/multimodal_router.dll") as router:
+with Router.load("examples/interop/matsim_config.xml") as router:
+    # Loading is running in the background; do other work here.
+    router.wait()  # Optional: queries wait automatically if needed.
     print(router.route("A", "B", "07:59:00"))
     print(router.route_many([
         {"from": "A", "to": "B", "departure": "07:59:00"},
@@ -46,14 +47,16 @@ to original IDs. [`docs/interop.md`](docs/interop.md) describes the complete API
 
 ## Java example
 
-Add `target/java/mmrouter-java-0.1.0.jar` to your classpath:
+Add `target/java/mmrouter-java-0.2.0.jar` to your classpath:
 
 ```java
 import java.nio.file.Path;
 import org.multimodalmatsim.router.NativeRouter;
 
-try (var router = new NativeRouter(Path.of("examples/interop/router.toml"),
+try (var router = NativeRouter.load(Path.of("examples/interop/router.toml"),
                                   Path.of("target/release/matsim_pt_router.dll"))) {
+    // Background loading lets the application continue here.
+    router.awaitReady();
     System.out.println(router.routeJson("A", "B", "07:59:00"));
 }
 ```
@@ -79,6 +82,13 @@ release may not contain it yet. MATSim workers use direct numeric calls, shared 
 and reusable workspaces. Native preprocessing runs alongside controller setup, and PT itinerary
 caching can wrap the backend. [Supported behavior and restrictions](docs/interop.md#matsim-deployment).
 
+Standalone Java utilities can load a MATSim config with
+`MatsimRouter.load(configPath, libraryPath)` using `mmrouter-matsim-0.2.0.jar` plus the Java client.
+Python accepts the same config directly through `Router.load(configPath)`; explicit GTFS/MATSim
+schedules plus partial parameters are also supported. Both provide lightweight worker views sharing
+one native engine. See [Java layout and usage](java/README.md), [MATSim tools](java/matsim/README.md)
+and [the short Python example](python/examples/async_routing.py).
+
 ## Project overview
 
 A Rust public transport routing core, designed to grow into a multimodal routing library.
@@ -86,7 +96,7 @@ Python and standalone Java clients share a versioned native API. Build both with
 `python tools/build.py --test`; see [clone/build, examples and MATSim deployment](docs/interop.md).
 It runs locally as a library or CLI, and through an optional in-process JNI adapter in eqasim-java.
 The adapter shares an immutable timetable across MATSim's existing mode-choice routing workers;
-no server or nested routing pool is needed. See [the JNI bridge](bridges/matsim-jni/README.md).
+no server or nested routing pool is needed. See [the JNI bridge](java/native/README.md).
 
 The first engine is an exact Connection Scan Algorithm (CSA), with walking closure and a
 boarding bound. It minimizes arrival time, breaking equal-arrival ties by fewer boardings.

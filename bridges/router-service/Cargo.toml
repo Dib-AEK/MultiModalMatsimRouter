@@ -1,12 +1,15 @@
 # Shares the versioned application API across Python's C bridge and Java's JNI bridge.
 [package]
 name = "mmrouter-service"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 [dependencies]
 multimodal-matsim-router = { path = "../.." }
 anyhow = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+quick-xml = "0.42"
+toml = "0.9"
+rstar = "0.12"
 [lints.rust]
 unsafe_code = "forbid"

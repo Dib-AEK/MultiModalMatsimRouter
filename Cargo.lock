@@ -624,7 +624,7 @@ checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
 
 [[package]]
 name = "matsim-pt-router-jni"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "jni",
@@ -660,7 +660,7 @@ dependencies = [
 
 [[package]]
 name = "mmrouter-ffi"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "mmrouter-service",
  "serde_json",
@@ -668,12 +668,15 @@ dependencies = [
 
 [[package]]
 name = "mmrouter-service"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "multimodal-matsim-router",
+ "quick-xml",
+ "rstar",
  "serde",
  "serde_json",
+ "toml",
 ]
 
 [[package]]

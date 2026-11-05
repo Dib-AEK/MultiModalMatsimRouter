@@ -119,17 +119,24 @@ pub fn read(path: &Path, coordinates: Coordinates) -> Result<RawTimetable> {
                             .filter(|v| v.as_str() != "undefined")
                             .map(|v| parse_time(v))
                             .transpose()?;
-                        let departure = a
-                            .get("departureOffset")
-                            .filter(|v| v.as_str() != "undefined")
-                            .map(|v| parse_time(v))
-                            .transpose()?;
+                        let departure = if i + 1 == count {
+                            None
+                        } else {
+                            a.get("departureOffset")
+                                .filter(|v| v.as_str() != "undefined")
+                                .map(|v| parse_time(v))
+                                .transpose()?
+                        };
                         let arrival = arrival
                             .or(if i == 0 { departure } else { None })
                             .context("missing interior/last arrivalOffset")?;
-                        let departure = departure
-                            .or(if i + 1 == count { Some(arrival) } else { None })
-                            .context("missing interior/first departureOffset")?;
+                        // No connection leaves the terminal stop; some MATSim feeds put 0 here.
+                        // Ignore only that unused departure, never a used interior offset.
+                        let departure = if i + 1 == count {
+                            arrival
+                        } else {
+                            departure.context("missing interior/first departureOffset")?
+                        };
                         let flag = |name: &str| -> Result<bool> {
                             match a.get(name).map(String::as_str) {
                                 None | Some("true") => Ok(true),

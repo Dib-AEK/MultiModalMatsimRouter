@@ -1,7 +1,7 @@
 # Builds the small JNI boundary; the routing library remains independent of Java.
 [package]
 name = "matsim-pt-router-jni"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 
 [lib]
@@ -13,4 +13,4 @@ multimodal-matsim-router = { path = "../.." }
 anyhow = "1"
 jni = "0.21.1"
 serde_json = "1"
-mmrouter-service = { path = "../router-service" }
+mmrouter-service = { path = "../../bridges/router-service" }

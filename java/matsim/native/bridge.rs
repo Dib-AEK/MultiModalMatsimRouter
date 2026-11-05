@@ -1,6 +1,6 @@
-//! Safe JNI array copies, lifetime-managed shared routers, and caller-thread search workspaces.
+//! Bridges MATSim snapshots and numeric queries to shared immutable native routing data.
+use crate::boundary;
 mod snapshot;
-mod standalone;
 
 use anyhow::{Context, Result, anyhow, ensure};
 use jni::{
@@ -17,7 +17,6 @@ use multimodal_matsim_router::{
 use std::{
     cell::RefCell,
     collections::HashMap,
-    panic::{AssertUnwindSafe, catch_unwind},
     sync::{
         Arc, OnceLock, RwLock,
         atomic::{AtomicI64, Ordering},
@@ -33,23 +32,6 @@ static NEXT: AtomicI64 = AtomicI64::new(1);
 thread_local! { static WORKSPACE: RefCell<Workspace> = RefCell::default(); }
 fn routers() -> &'static RwLock<HashMap<i64, Arc<Router>>> {
     ROUTERS.get_or_init(Default::default)
-}
-
-/// No panic may unwind through a JVM frame. JNI exceptions preserve useful validation messages.
-fn boundary<T: Default>(env: &mut JNIEnv, operation: impl FnOnce(&mut JNIEnv) -> Result<T>) -> T {
-    match catch_unwind(AssertUnwindSafe(|| operation(env))) {
-        Ok(Ok(value)) => value,
-        result => {
-            let message = match result {
-                Ok(Err(error)) => format!("{error:#}"),
-                _ => "Rust PT router panicked".into(),
-            };
-            if !env.exception_check().unwrap_or(true) {
-                let _ = env.throw_new("java/lang/IllegalStateException", message);
-            }
-            T::default()
-        }
-    }
 }
 
 // SAFETY: These names and system ABI correspond exactly to NativePtRouter's static native methods.
