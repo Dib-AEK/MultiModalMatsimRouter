@@ -46,8 +46,17 @@ pub extern "system" fn Java_org_eqasim_switzerland_ch_1cmdp_rustRouting_NativePt
         let file: String = env.get_string(&file)?.into();
         let costs: String = env.get_string(&costs)?.into();
         let timetable = snapshot::read(&file)?;
-        let settings = serde_json::from_str(&costs).context("invalid MATSim routing costs")?;
-        let costs = CostModel::new(&timetable, &settings)?;
+        let mut value: serde_json::Value =
+            serde_json::from_str(&costs).context("invalid MATSim routing costs")?;
+        let search = value
+            .as_object_mut()
+            .and_then(|v| v.remove("_search"))
+            .map(serde_json::from_value)
+            .transpose()
+            .context("invalid MATSim search options")?
+            .unwrap_or_default();
+        let settings = serde_json::from_value(value).context("invalid MATSim routing costs")?;
+        let costs = CostModel::with_search_options(&timetable, &settings, search)?;
         let id = NEXT.fetch_add(1, Ordering::Relaxed);
         ensure!(id > 0, "native router handle overflow");
         routers()

@@ -43,9 +43,28 @@ max_duration_seconds = 108000.0
 return_pareto = false
 
 [routing.search]
-# Exact weighted-search accelerations. All default true; disable individually for differential tests.
+# Refine a nested geographic seed using service frequency and walking connectivity.
+network_partition = true
+# Optional shared cost-aware transfer suffix bounds; measure their extra memory/lookup cost.
+transfer_blocks = false
+# Activate boardable trips from touched stops; merge their connections in reference order.
+# This does not restrict searches to city boundaries or discard later/express alternatives.
+local_connections = true
+# Settle exact reverse bounds near the destination; beyond four times the nearest
+# access-stop bound, use that cutoff as a conservative lower bound. No route is excluded.
+local_bounds = true
+# Prove difficult no-path requests unreachable using a relaxed temporal scan. Runs
+# once only after 2048 improved labels without a feasible incumbent, not on ordinary queries.
+temporal_pruning = true
+# Shared, downward-rounded f32 lower bounds to balanced geographic destination cells.
+# 0 disables; default 128, maximum 1024. No routes are clipped to cells. Memory is
+# about cells * stops * 4 bytes, shared by all workers. Complements local query bounds.
+# transfer_blocks adds cells * block_count * 4 plus modes * block_count * 4 bytes,
+# where block_count is the sum of ceil(outgoing transfers / 16) over stops.
+regional_bound_cells = 128
+# Exact weighted-search accelerations; disable individually for differential tests.
 # Build a shared optimistic cost graph and compute reverse destination bounds per query.
-# Bound computation is included in query timing. No destination/result cache is used.
+# Bound computation is included in query timing. Shared regional potentials cache no routes.
 destination_bounds = true
 # Compare time/cost/mode/first-boarding context against completed earlier boarding rounds.
 cross_round_dominance = true

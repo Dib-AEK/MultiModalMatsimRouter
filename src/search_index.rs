@@ -16,6 +16,8 @@ struct Edge {
     cost: f64,
 }
 pub(crate) struct SearchIndex {
+    pub local: crate::local_search::LocalIndex,
+    pub regional: Option<crate::regional_bounds::RegionalBounds>,
     transfer_offsets: Vec<usize>,
     transfers: Vec<Transfer>,
     reverse_offsets: Vec<usize>,
@@ -52,8 +54,78 @@ impl Ord for QueueEntry {
 /// Reused request-local Dijkstra state; computation is included in query timing, never cached by destination.
 #[derive(Default)]
 pub(crate) struct BoundWorkspace {
-    pub values: Vec<f64>,
+    values: Vec<f64>,
+    settled: Vec<bool>,
+    touched: Vec<usize>,
+    limit: f64,
+    regional_targets: Vec<(usize, f64)>,
     heap: BinaryHeap<QueueEntry>,
+}
+impl BoundWorkspace {
+    fn reset(&mut self, n: usize) {
+        for i in self.touched.drain(..) {
+            self.values[i] = f64::INFINITY;
+            self.settled[i] = false;
+        }
+        self.values.resize(n, f64::INFINITY);
+        self.settled.resize(n, false);
+        self.heap.clear();
+        self.regional_targets.clear();
+        self.limit = f64::INFINITY;
+    }
+    pub fn disable(&mut self, n: usize) {
+        self.reset(n);
+        self.limit = 0.0;
+    }
+    pub fn use_regional(
+        &mut self,
+        n: usize,
+        regional: &crate::regional_bounds::RegionalBounds,
+        targets: &[crate::weighted::Endpoint],
+        walk: f64,
+    ) {
+        debug_assert_eq!(self.values.len(), n);
+        for e in targets {
+            let cell = regional.cell(e.stop);
+            let cost = down(e.duration as f64 * walk);
+            if let Some((_, previous)) =
+                self.regional_targets.iter_mut().find(|(id, _)| *id == cell)
+            {
+                *previous = previous.min(cost);
+            } else {
+                self.regional_targets.push((cell, cost));
+            }
+        }
+    }
+    pub fn transfer_suffix(
+        &self,
+        regional: &crate::regional_bounds::RegionalBounds,
+        stop: usize,
+        position: usize,
+        mode: Option<usize>,
+    ) -> f64 {
+        regional.suffix(stop, position, &self.regional_targets)
+            + regional.change_suffix(stop, position, mode)
+    }
+    pub fn get(&self, stop: StopId) -> f64 {
+        if self.settled[stop as usize] {
+            self.values[stop as usize]
+        } else {
+            self.limit
+        }
+    }
+    pub fn get_regional(
+        &self,
+        stop: StopId,
+        regional: Option<&crate::regional_bounds::RegionalBounds>,
+    ) -> f64 {
+        if self.settled[stop as usize] {
+            return self.values[stop as usize];
+        }
+        regional.map_or(self.limit, |r| {
+            self.limit.max(r.lower(stop, &self.regional_targets))
+        })
+    }
 }
 /// Round each nonnegative relaxed operation down, retaining an optimistic floating-point estimate.
 fn down(value: f64) -> f64 {
@@ -153,7 +225,9 @@ impl SearchIndex {
             .into_iter()
             .map(|((_, to), cost)| Edge { to, cost })
             .collect();
-        Self {
+        let mut result = Self {
+            regional: None,
+            local: crate::local_search::LocalIndex::new(t),
             transfer_offsets,
             transfers,
             reverse_offsets,
@@ -162,7 +236,18 @@ impl SearchIndex {
             boarding_times,
             minimum_changes,
             modes: rates.len(),
+        };
+        if options.destination_bounds && options.regional_bound_cells > 0 {
+            result.regional = Some(crate::regional_bounds::RegionalBounds::build(
+                t,
+                &result,
+                options.regional_bound_cells,
+                options.network_partition,
+                options.transfer_blocks,
+                walk,
+            ));
         }
+        result
     }
     /// Earliest feasible departure only supplies a lower bound; later/express alternatives remain searchable.
     pub fn next_boarding(&self, stop: StopId, ready: Time, horizon: Time) -> Option<Time> {
@@ -173,7 +258,13 @@ impl SearchIndex {
             .copied()
             .filter(|&time| time <= horizon)
     }
+    pub fn mode_count(&self) -> usize {
+        self.modes
+    }
     pub fn minimum_change(&self, stop: StopId, from: usize) -> f64 {
+        if self.minimum_changes.is_empty() {
+            return 0.0;
+        }
         self.minimum_changes[stop as usize * self.modes + from]
     }
     pub fn transfers(&self, stop: usize) -> &[Transfer] {
@@ -185,14 +276,21 @@ impl SearchIndex {
         n: usize,
         walk: f64,
         targets: &[crate::weighted::Endpoint],
+        sources: &[crate::weighted::Endpoint],
+        local: bool,
         w: &mut BoundWorkspace,
     ) -> usize {
-        w.values.resize(n, f64::INFINITY);
-        w.values.fill(f64::INFINITY);
-        w.heap.clear();
+        w.reset(n);
+        let mut cutoff = None;
+        let mut source_ids: Vec<_> = sources.iter().map(|s| s.stop).collect();
+        source_ids.sort_unstable();
+        source_ids.dedup();
         for e in targets {
             let cost = down(e.duration as f64 * walk);
             if cost < w.values[e.stop as usize] {
+                if !w.values[e.stop as usize].is_finite() {
+                    w.touched.push(e.stop as usize);
+                }
                 w.values[e.stop as usize] = cost;
                 w.heap.push(QueueEntry { cost, stop: e.stop });
             }
@@ -202,12 +300,25 @@ impl SearchIndex {
             if cost != w.values[stop as usize] {
                 continue;
             }
+            if cutoff.is_some_and(|limit| cost > limit) {
+                // Every unsettled vertex is at least this far from the destination.
+                // Capping its bound weakens pruning but cannot remove a real optimum.
+                w.limit = cutoff.unwrap();
+                break;
+            }
+            w.settled[stop as usize] = true;
             settled += 1;
+            if local && cutoff.is_none() && source_ids.binary_search(&stop).is_ok() {
+                cutoff = Some(cost * 4.0);
+            }
             for e in &self.reverse
                 [self.reverse_offsets[stop as usize]..self.reverse_offsets[stop as usize + 1]]
             {
                 let next = cost.max(down(cost + e.cost));
                 if next < w.values[e.to as usize] {
+                    if !w.values[e.to as usize].is_finite() {
+                        w.touched.push(e.to as usize);
+                    }
                     w.values[e.to as usize] = next;
                     w.heap.push(QueueEntry {
                         cost: next,
@@ -223,7 +334,9 @@ impl SearchIndex {
             relaxed_edges: self.reverse.len(),
             transfer_entries: self.transfers.len(),
             boarding_events: self.boarding_times.len(),
-            allocated_bytes: self.transfer_offsets.capacity() * size_of::<usize>()
+            allocated_bytes: self.regional.as_ref().map_or(0, |r| r.allocated_bytes())
+                + self.local.allocated_bytes()
+                + self.transfer_offsets.capacity() * size_of::<usize>()
                 + self.transfers.capacity() * size_of::<Transfer>()
                 + self.reverse_offsets.capacity() * size_of::<usize>()
                 + self.reverse.capacity() * size_of::<Edge>()

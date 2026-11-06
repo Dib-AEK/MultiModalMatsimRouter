@@ -8,6 +8,12 @@ use std::collections::BTreeMap;
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct SearchOptions {
+    pub local_connections: bool,
+    pub network_partition: bool,
+    pub transfer_blocks: bool,
+    pub local_bounds: bool,
+    pub temporal_pruning: bool,
+    pub regional_bound_cells: usize,
     pub destination_bounds: bool,
     pub cross_round_dominance: bool,
     pub sorted_transfers: bool,
@@ -16,6 +22,12 @@ pub struct SearchOptions {
 impl Default for SearchOptions {
     fn default() -> Self {
         Self {
+            local_connections: true,
+            network_partition: true,
+            transfer_blocks: false,
+            local_bounds: true,
+            temporal_pruning: true,
+            regional_bound_cells: 128,
             destination_bounds: true,
             cross_round_dominance: true,
             sorted_transfers: true,
@@ -26,6 +38,12 @@ impl Default for SearchOptions {
 impl SearchOptions {
     pub fn disabled() -> Self {
         Self {
+            local_connections: false,
+            network_partition: false,
+            transfer_blocks: false,
+            local_bounds: false,
+            temporal_pruning: false,
+            regional_bound_cells: 0,
             destination_bounds: false,
             cross_round_dominance: false,
             sorted_transfers: false,
@@ -150,6 +168,10 @@ impl CostModel {
         search: SearchOptions,
     ) -> Result<Self> {
         settings.validate()?;
+        ensure!(
+            search.regional_bound_cells <= 1024,
+            "regional_bound_cells must be between 0 and 1024"
+        );
         let mut modes = BTreeMap::new();
         let mut rates = Vec::new();
         let trip_modes: Vec<usize> = t

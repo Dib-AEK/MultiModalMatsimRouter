@@ -290,3 +290,8 @@ Parallel batches now support dynamic claiming and explicit prior-work priorities
 order and worker-local workspaces. See [parallelism](docs/parallelism.md) and the measured
 [1–16-worker scaling report](examples/geneva/scaling_results/REPORT.md). Linear speedup is not
 assumed; the report separates work imbalance from increased query wall time under concurrency.
+
+Large-timetable searches now use sparse workspaces, indexed activation of boardable trips, shared
+geographic-cell potentials and temporal rejection of difficult no-path requests. Cells never clip
+journeys to a city. See [large-scenario routing](docs/large_scenario_optimizations.md) for correctness,
+memory costs, configuration switches and the concurrent coordinate-benchmark tool.

@@ -25,7 +25,7 @@ Never put transport-protocol concerns into the routing algorithm. The core still
 - `cost` / `weighted`: compiled mode costs and an independent time/cost frontier search by
   boarding round. Preserve previous mode and first boarding time when required by transfer costs.
 - `search_index`: immutable sorted transfers, platform departure/mode indices and a relaxed
-  reverse cost graph. Every timed query recomputes its destination bounds in worker-local state.
+  reverse cost graph. Shared destination-cell potentials complement sparse, bounded query-local refinement.
 - `batching`: bounded batch dispatch, optional work priorities, ordered results and opt-in
   worker diagnostics. It must never change the routing objective or cache query results.
 - `spatial`: shared geometric distance and indexed walking-neighbor generation.
@@ -133,7 +133,7 @@ Its no-interstop-walking protocol, source exclusions and timing scope must remai
 Do not generalize results dominated by unreachable queries to connected walking-enabled networks.
 
 ## Weighted acceleration milestone
-The default weighted engine now uses destination lower bounds, cross-round dominance, sorted
+The default weighted engine now uses shared regional and query-local destination lower bounds, cross-round dominance, sorted
 transfer early termination and platform boarding indices. See docs/weighted_optimizations.md
 for invariants and floating-point handling. Preserve later cheaper/overtaking alternatives and
 zero-time/zero-cost paths; do not use earliest-arrival-only dominance or truncate candidate lists.
@@ -168,3 +168,22 @@ No production input repair or route exclusion is allowed; unused terminal depart
 normalized because they are never used. Unsupported chained/capacity/intermodal/range behavior fails
 explicitly. Bound maxBoardings/maxDuration are documented configuration limits. The core's intended
 transfer objective is retained, without emulating the reference's duplicate mode-penalty charging.
+
+## Large-timetable locality
+Weighted queries index pickup events by stop and merge activated trip continuations in the original
+connection-index order. Sparse rows clear only touched stops/trips; retain deterministic tie order.
+Balanced geographic cells supply shared f32 potentials rounded downward. They are lower bounds,
+never allowed-region masks. Searches may leave and re-enter cells, including on intercity services.
+The temporal negative check preserves pickup/dropoff, walking times/direction and transfer buffers,
+but ignores the boarding-count limit; only a negative answer may prune. Preserve zero-time batch closure. Keep full scans/exact reverse
+bounds available through SearchOptions for differential validation. Cell indices rebuild with the
+cost model, not with the timetable cache. Default 128 cells cost about 512 bytes per stop, shared.
+Lazy initialization inside Rayon workers must not yield while holding a TLS workspace RefCell borrow.
+Use tools/benchmark_coordinates.py for real-feed concurrency tests. Separate preprocessing, query
+worker time and elapsed throughput; compare full itineraries while excluding diagnostic counters.
+
+Network-aware partitions and transfer suffix blocks are independent SearchOptions. Partition
+refinement may change cell shape, never allowed journeys. Transfer suffix pruning must combine
+only admissible minima; retain mode-dependent lower bounds only for static costs. Do not call
+these bounds T-REX hard transfer ranks. Validate all acceleration combinations and dense transfer
+lists, including zero-duration walks. Keep the portable JNI protocol unchanged.

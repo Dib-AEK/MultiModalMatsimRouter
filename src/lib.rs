@@ -13,3 +13,12 @@ pub mod spatial;
 pub mod time;
 pub mod weighted;
 pub mod work_history;
+
+mod local_search;
+mod sparse_rows;
+
+mod regional_bounds;
+
+mod temporal_reachability;
+
+mod network_partition;
