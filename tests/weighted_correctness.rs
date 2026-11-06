@@ -285,8 +285,9 @@ fn generated_timetables_match_exhaustive_weighted_paths() {
             duration: 6000,
         });
         let expected = brute(&t, &q, &c);
-        for flags in 0..1024 {
+        for flags in 0..2048 {
             let options = SearchOptions {
+                local_bound_settlements: if flags & 1024 != 0 { 1 } else { 0 },
                 network_partition: flags & 256 != 0,
                 transfer_blocks: flags & 512 != 0,
                 local_connections: flags & 16 != 0,

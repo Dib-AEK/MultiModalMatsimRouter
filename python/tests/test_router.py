@@ -13,6 +13,25 @@ CONFIG = Path(__file__).resolve().parents[2] / "examples" / "interop" / "router.
 
 
 class RouterTests(unittest.TestCase):
+    def test_coordinate_policy_config_override_and_validation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            p = Path(directory)
+            xml = CONFIG.with_name("matsim_config.xml").read_text().replace(
+                "</config>", '<module name="swissRustRouting">'
+                '<param name="coordinateWorkBudget" value="123"/>'
+                '<param name="qualityWaitSeconds" value="60"/>'
+                '<param name="qualityJourneySeconds" value="120"/>'
+                '<param name="qualityRadiusMeters" value="800"/></module></config>')
+            (p / "config.xml").write_text(xml)
+            (p / "timetable.xml").write_bytes(CONFIG.with_name("timetable.xml").read_bytes())
+            with Router(p / "config.xml", parameters={"stop_search": {"policy": {"work_budget": 0}}}) as router:
+                self.assertEqual(router.metadata()["stop_search"]["policy"], {
+                    "work_budget": 0, "quality_wait_seconds": 60.,
+                    "quality_journey_seconds": 120., "quality_radius_m": 800.})
+                self.assertIsNotNone(router.route_coordinates((0, 0), (1000, 0), "07:59:00"))
+            with self.assertRaisesRegex(ValueError, "coordinate search policy"):
+                Router(p / "config.xml", parameters={"stop_search": {"policy": {"quality_radius_m": -1}}})
+
     def test_matsim_declared_geographic_coordinates(self):
         with tempfile.TemporaryDirectory() as directory:
             p = Path(directory)

@@ -164,3 +164,44 @@ fn equal_time_connections_and_overtaking_keep_reference_order() {
         100
     );
 }
+
+#[test]
+fn bounded_heuristic_preparation_preserves_the_full_search() {
+    let t = table(vec![
+        vec![(0, 100), (2, 200)],
+        vec![(2, 210), (1, 300)],
+        vec![(0, 100), (1, 900)],
+    ]);
+    let q = query();
+    let reference = weighted::route(
+        &t,
+        &q,
+        &CostModel::with_search_options(&t, &Costs::default(), SearchOptions::disabled()).unwrap(),
+        &mut Workspace::default(),
+    )
+    .unwrap()
+    .unwrap();
+    let mut workspace = Workspace::default();
+    for budget in [1, 2, 0, 3, 1] {
+        let model = CostModel::with_search_options(
+            &t,
+            &Costs::default(),
+            SearchOptions {
+                local_bound_settlements: budget,
+                ..SearchOptions::default()
+            },
+        )
+        .unwrap();
+        let result = weighted::route(&t, &q, &model, &mut workspace)
+            .unwrap()
+            .unwrap();
+        assert_eq!(result.journey.legs, reference.journey.legs);
+        assert_eq!(
+            result.journey.generalized_cost,
+            reference.journey.generalized_cost
+        );
+        if budget > 0 {
+            assert!(result.journey.statistics.bound_settled_stops <= budget);
+        }
+    }
+}

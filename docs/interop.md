@@ -198,3 +198,38 @@ Matching Python and MATSim results requires matching schedule adaptations, cost 
 access/egress sets and transfer graphs. `routing.matsim_config` imports supported cost coefficients;
 standalone walking/preprocessing settings must also match deliberately. The MATSim adapter already
 gets these from the live scenario. This work does not add road routing or Java-disutility translation.
+
+## Coordinate search policy
+
+Coordinate queries share a configurable policy across Python, Java and the MATSim adapter. The
+default work budget is 2000000 scanned connections plus considered transfers per candidate search.
+If a feasible route has already been found when this budget is reached, it can be returned before
+proving minimum cost, with `search_truncated: true` in its response. This is an approximation, not
+an execution-time guarantee. An interrupted search without a route falls back to an exact search;
+it is never reported as unreachable merely because the budget expired. The same safeguard applies
+before rejecting an incomplete result in favor of direct walking.
+
+A journey longer than 10800 seconds, or a pre-departure gap longer than 1800 seconds, triggers a
+wider served-stop search up to 2000 m. There are at most five candidate attempts. A gap can include
+onboard dwell between reconstructed transit legs. Expansion can avoid hours of waiting near an
+infrequently served stop when a useful station is a little farther away. It changes the available
+walking alternatives, while retaining all utility and transfer coefficients.
+Before spending the full budget on a poor candidate set, the engine uses a 250000-work-unit probe.
+Promising truncated probes receive the full budget; poor or unresolved probes can widen first.
+When loading a MATSim config, the equivalent `swissRustRouting` policy parameters are imported;
+explicit `parameters.stop_search.policy` values override them.
+
+```python
+router = Router("switzerland_config.xml", threads=8, parameters={
+    "stop_search": {"policy": {
+        "work_budget": 2000000,          # 0: prove the optimum for each candidate set
+        "quality_wait_seconds": 1800,   # 0: disable this expansion trigger
+        "quality_journey_seconds": 10800,
+        "quality_radius_m": 2000        # quality expansion cap; no-path retries remain
+    }}
+})
+```
+
+Set all four fields to zero for exact legacy coordinate behavior. Explicit-endpoint weighted
+queries and stop-to-stop routing remain exact regardless of this coordinate policy. Each worker
+retains its private workspace; the policy requires no additional timetable copies or worker pools.

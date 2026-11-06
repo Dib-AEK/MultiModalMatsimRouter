@@ -46,7 +46,7 @@ impl RegionalBounds {
                     duration: 0,
                 })
                 .collect();
-            index.bounds(t.stops.len(), 0., &targets, &[], false, workspace);
+            index.bounds(t.stops.len(), 0., &targets, &[], None, workspace);
             (0..t.stops.len())
                 .map(|stop| {
                     let bound = workspace.get(stop as u32);

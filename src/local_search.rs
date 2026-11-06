@@ -129,10 +129,13 @@ impl ConnectionScan {
             *i += 1;
             return Some(result);
         }
-        let Reverse(i) = self.heap.pop()?;
+        let mut root = self.heap.peek_mut()?;
+        let Reverse(i) = *root;
         let next = index.following[i as usize];
         if next != NONE {
-            self.heap.push(Reverse(next));
+            *root = Reverse(next);
+        } else {
+            std::collections::binary_heap::PeekMut::pop(root);
         }
         Some(i as usize)
     }

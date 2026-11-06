@@ -6,7 +6,7 @@ use anyhow::{Context, Result, anyhow, ensure};
 use jni::{
     JNIEnv,
     objects::{JClass, JIntArray, JString},
-    sys::{jdoubleArray, jint, jlong},
+    sys::{jdouble, jdoubleArray, jint, jlong},
 };
 use multimodal_matsim_router::{
     cost::CostModel,
@@ -26,6 +26,10 @@ use std::{
 struct Router {
     timetable: Timetable,
     costs: CostModel,
+    coordinates: Option<(
+        multimodal_matsim_router::coordinate_index::CoordinateIndex,
+        CoordinateSettings,
+    )>,
 }
 static ROUTERS: OnceLock<RwLock<HashMap<i64, Arc<Router>>>> = OnceLock::new();
 static NEXT: AtomicI64 = AtomicI64::new(1);
@@ -55,6 +59,22 @@ pub extern "system" fn Java_org_eqasim_switzerland_ch_1cmdp_rustRouting_NativePt
             .transpose()
             .context("invalid MATSim search options")?
             .unwrap_or_default();
+        let coordinates = value
+            .as_object_mut()
+            .and_then(|v| v.remove("_coordinates"))
+            .map(serde_json::from_value::<CoordinateSettings>)
+            .transpose()?;
+        let coordinates = coordinates
+            .map(|mut c| {
+                c.policy.validate()?;
+                let index = multimodal_matsim_router::coordinate_index::CoordinateIndex::new(
+                    &timetable,
+                    std::mem::take(&mut c.access),
+                    std::mem::take(&mut c.egress),
+                )?;
+                Ok::<_, anyhow::Error>((index, c))
+            })
+            .transpose()?;
         let settings = serde_json::from_value(value).context("invalid MATSim routing costs")?;
         let costs = CostModel::with_search_options(&timetable, &settings, search)?;
         let id = NEXT.fetch_add(1, Ordering::Relaxed);
@@ -62,7 +82,14 @@ pub extern "system" fn Java_org_eqasim_switzerland_ch_1cmdp_rustRouting_NativePt
         routers()
             .write()
             .map_err(|_| anyhow!("router registry poisoned"))?
-            .insert(id, Arc::new(Router { timetable, costs }));
+            .insert(
+                id,
+                Arc::new(Router {
+                    timetable,
+                    costs,
+                    coordinates,
+                }),
+            );
         Ok(id)
     })
 }
@@ -122,52 +149,7 @@ pub extern "system" fn Java_org_eqasim_switzerland_ch_1cmdp_rustRouting_NativePt
                 &mut w.borrow_mut(),
             )
         })?;
-        // Empty array is an ordinary no-path result, never a Java exception.
-        let mut output = Vec::new();
-        if let Some(result) = result {
-            output.extend([
-                result
-                    .journey
-                    .generalized_cost
-                    .context("missing weighted cost")?,
-                result.access.stop as f64,
-                result.access.duration as f64,
-                result.egress.stop as f64,
-                result.egress.duration as f64,
-            ]);
-            for leg in result.journey.legs {
-                let values = match leg {
-                    Leg::Walk {
-                        from,
-                        to,
-                        departure,
-                        arrival,
-                    } => [
-                        0.,
-                        -1.,
-                        from as f64,
-                        to as f64,
-                        departure as f64,
-                        arrival as f64,
-                    ],
-                    Leg::Transit {
-                        trip,
-                        from,
-                        to,
-                        departure,
-                        arrival,
-                    } => [
-                        1.,
-                        trip as f64,
-                        from as f64,
-                        to as f64,
-                        departure as f64,
-                        arrival as f64,
-                    ],
-                };
-                output.extend(values);
-            }
-        }
+        let output = encode(result)?;
         let array = env.new_double_array(output.len().try_into()?)?;
         env.set_double_array_region(&array, 0, &output)?;
         Ok(array.into_raw())
@@ -188,4 +170,194 @@ pub extern "system" fn Java_org_eqasim_switzerland_ch_1cmdp_rustRouting_NativePt
             .remove(&handle);
         Ok(())
     });
+}
+
+fn encode(result: Option<weighted::ResultJourney>) -> Result<Vec<f64>> {
+    // Empty array is an ordinary no-path result, never a Java exception.
+    let mut output = Vec::new();
+    if let Some(result) = result {
+        output.extend([
+            result
+                .journey
+                .generalized_cost
+                .context("missing weighted cost")?,
+            result.access.stop as f64,
+            result.access.duration as f64,
+            result.egress.stop as f64,
+            result.egress.duration as f64,
+        ]);
+        for leg in result.journey.legs {
+            let values = match leg {
+                Leg::Walk {
+                    from,
+                    to,
+                    departure,
+                    arrival,
+                } => [
+                    0.,
+                    -1.,
+                    from as f64,
+                    to as f64,
+                    departure as f64,
+                    arrival as f64,
+                ],
+                Leg::Transit {
+                    trip,
+                    from,
+                    to,
+                    departure,
+                    arrival,
+                } => [
+                    1.,
+                    trip as f64,
+                    from as f64,
+                    to as f64,
+                    departure as f64,
+                    arrival as f64,
+                ],
+            };
+            output.extend(values);
+        }
+    }
+
+    Ok(output)
+}
+
+#[derive(serde::Deserialize)]
+struct CoordinateSettings {
+    #[serde(default = "multimodal_matsim_router::coordinate_routing::Policy::legacy")]
+    policy: multimodal_matsim_router::coordinate_routing::Policy,
+    radius: f64,
+    extension: f64,
+    speed: f64,
+    direct_factor: f64,
+    walk_per_second: f64,
+    access: Vec<f64>,
+    egress: Vec<f64>,
+}
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_org_eqasim_switzerland_ch_1cmdp_rustRouting_NativePtRouter_coordinateProtocolVersion(
+    _: JNIEnv,
+    _: JClass,
+) -> jint {
+    1
+}
+
+struct CoordinateCall {
+    handle: jlong,
+    departure: jlong,
+    boardings: jint,
+    duration: jlong,
+    origin: [f64; 2],
+    destination: [f64; 2],
+}
+fn coordinate_call(env: &mut JNIEnv, call: CoordinateCall, detailed: bool) -> jdoubleArray {
+    boundary(env, |env| {
+        let router = routers()
+            .read()
+            .map_err(|_| anyhow!("router registry poisoned"))?
+            .get(&call.handle)
+            .cloned()
+            .context("native PT router is closed")?;
+        let (index, c) = router
+            .coordinates
+            .as_ref()
+            .context("coordinate settings missing")?;
+        let query = multimodal_matsim_router::coordinate_routing::Request {
+            origin: call.origin,
+            destination: call.destination,
+            departure: call.departure.try_into()?,
+            max_boardings: call.boardings.try_into()?,
+            max_duration: call.duration.try_into()?,
+            radius: c.radius,
+            extension: c.extension,
+            speed: c.speed,
+            walk_per_second: c.walk_per_second,
+            direct_factor: c.direct_factor,
+        };
+        let outcome = WORKSPACE.with(|w| {
+            multimodal_matsim_router::coordinate_routing::route(
+                &router.timetable,
+                index,
+                &router.costs,
+                &query,
+                c.policy,
+                &mut w.borrow_mut(),
+            )
+        })?;
+        let mut output = vec![outcome.attempts as f64];
+        if detailed {
+            output.push(
+                if outcome.journey.as_ref().is_some_and(|r| r.search_truncated) {
+                    1.
+                } else {
+                    0.
+                },
+            );
+        }
+        output.extend(encode(outcome.journey)?);
+        let array = env.new_double_array(output.len().try_into()?)?;
+        env.set_double_array_region(&array, 0, &output)?;
+        Ok(array.into_raw())
+    })
+}
+// Legacy coordinate ABI remains unchanged. New clients can request explicit truncation metadata.
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_org_eqasim_switzerland_ch_1cmdp_rustRouting_NativePtRouter_routeCoordinates(
+    mut env: JNIEnv,
+    _: JClass,
+    handle: jlong,
+    departure: jlong,
+    boardings: jint,
+    duration: jlong,
+    ox: jdouble,
+    oy: jdouble,
+    dx: jdouble,
+    dy: jdouble,
+) -> jdoubleArray {
+    coordinate_call(
+        &mut env,
+        CoordinateCall {
+            handle,
+            departure,
+            boardings,
+            duration,
+            origin: [ox, oy],
+            destination: [dx, dy],
+        },
+        false,
+    )
+}
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_org_eqasim_switzerland_ch_1cmdp_rustRouting_NativePtRouter_coordinatePolicyVersion(
+    _: JNIEnv,
+    _: JClass,
+) -> jint {
+    1
+}
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_org_eqasim_switzerland_ch_1cmdp_rustRouting_NativePtRouter_routeCoordinatesDetailed(
+    mut env: JNIEnv,
+    _: JClass,
+    handle: jlong,
+    departure: jlong,
+    boardings: jint,
+    duration: jlong,
+    ox: jdouble,
+    oy: jdouble,
+    dx: jdouble,
+    dy: jdouble,
+) -> jdoubleArray {
+    coordinate_call(
+        &mut env,
+        CoordinateCall {
+            handle,
+            departure,
+            boardings,
+            duration,
+            origin: [ox, oy],
+            destination: [dx, dy],
+        },
+        true,
+    )
 }

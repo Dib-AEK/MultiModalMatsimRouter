@@ -160,3 +160,30 @@ Eqasim exposes `swissRustRouting.networkPartition` (default true) and
 The JNI cost envelope accepts optional `_search` settings. Default settings omit this extension,
 retaining compatibility with older protocol-1 libraries. Explicit experimental settings require
 the rebuilt native library. Python and standalone Java clients use `routing.search` options.
+
+## Bounded heuristic preparation and boarding activation
+
+Query-local bound preparation now settles at most 1024 stops by default. This is not a route-search
+limit: after stopping relaxed Dijkstra, the last settled distance is a valid lower bound for every
+unsettled vertex. Known settled distances remain available, and shared destination-region potentials
+continue to guide all other stops. Shared regional preprocessing uses an uncapped exact relaxed search.
+`routing.search.local_bound_settlements = 0` removes the settlement-count cap while retaining the original distance cutoff.
+In MATSim the corresponding option is `swissRustRouting.localBoundSettlements`.
+
+Once an incumbent exists, boarding activation excludes departures that cannot beat it under the
+minimum time rate. For each ready label, retain departures through label time plus remaining cost
+budget divided by the minimum rate, with outward rounding and numerical slack. Take the maximum
+across all labels, including later-cheaper alternatives; zero time rates leave the horizon unrestricted.
+Connection processing order, actual costs, mode history, transfer costs and route reconstruction stay
+unchanged. Two repeated frontier-dominance checks are also removed after their preallocation guards.
+
+Two alternating-order Swiss experiments used 1000 real coordinate queries and eight concurrent callers.
+The first compared before/unlimited/1024/4096 budgets: median seconds were 7.997 / 7.332 / 6.938 / 7.001.
+The second compared before/regional-only/256/1024: 8.132 / 7.081 / 7.174 / 6.968. Every complete itinerary
+matched in every pass after excluding diagnostics. This is approximately 13-14% lower native elapsed
+time on this local workload, not a claim about whole-iteration or 48-worker performance. Clocks vary
+across passes; small differences between budgets are not statistically established.
+
+Inline SmallVec frontier storage was prototyped but discarded: its combined median (7.859 seconds)
+was effectively unchanged from the 7.861-second baseline in that comparison. No new container
+library remains in the routing core. See the Switzerland example for MATSim-level measurements.

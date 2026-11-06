@@ -1,0 +1,61 @@
+{
+  "workers": 8,
+  "queries": 1000,
+  "java_max_heap": "10g",
+  "machine": "Windows, AMD Ryzen 7 PRO 6850U, 8 physical / 16 logical CPUs",
+  "matsim_adapter": {
+    "before_seconds": [
+      7.8169784,
+      8.2783819,
+      8.0597822
+    ],
+    "after_seconds": [
+      7.3206792,
+      7.6073475,
+      7.9067949
+    ],
+    "before_median": 8.0597822,
+    "after_median": 7.6073475,
+    "identical_itinerary_sha256": "37328e1b102f6490a8c8e7543e18c046ffe51cf609f1b99e9cb32517e0af0da6"
+  },
+  "native_budget_comparison": {
+    "workers": 8,
+    "queries": 1000,
+    "variants": [
+      "before",
+      "regional_only",
+      "256",
+      "1024"
+    ],
+    "seconds": [
+      [
+        7.662378700002591,
+        8.694872299998678,
+        8.132308399999602
+      ],
+      [
+        7.081329699998605,
+        7.029186599997047,
+        7.087963600002695
+      ],
+      [
+        7.174219299999095,
+        7.2699298999978055,
+        7.115883599999506
+      ],
+      [
+        7.404607299999043,
+        6.967852800000401,
+        6.913599500003329
+      ]
+    ],
+    "medians": [
+      8.132308399999602,
+      7.081329699998605,
+      7.174219299999095,
+      6.967852800000401
+    ],
+    "identical_itineraries": true
+  },
+  "scope": "Query time only; full Swiss schedule/network loaded once, eight workers, 1000 warm-up requests before MATSim timing. Not whole-simulation or cluster performance."
+}

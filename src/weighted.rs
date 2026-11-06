@@ -5,7 +5,10 @@ use crate::{
     routing::{Journey, Leg, Statistics},
     time::{NEVER, Time},
 };
-use crate::{local_search::ConnectionScan, sparse_rows::SparseRows};
+use crate::{
+    local_search::ConnectionScan,
+    sparse_rows::{Row, SparseRows},
+};
 use anyhow::{Result, ensure};
 use serde::{Deserialize, Serialize};
 
@@ -26,11 +29,18 @@ pub struct Query {
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResultJourney {
+    /// True only when a coordinate-routing work budget stopped the selected search early.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub search_truncated: bool,
     #[serde(flatten)]
     pub journey: Journey,
     pub access: Endpoint,
     pub egress: Endpoint,
 }
+fn is_false(value: &bool) -> bool {
+    !*value
+}
+
 #[derive(Clone, Copy)]
 struct Label {
     time: Time,
@@ -94,17 +104,47 @@ fn dominates(a: &Label, b: &Label, m: &CostModel) -> bool {
         && (!m.dynamic || a.first >= b.first)
         && a.cost + m.max_time_rate * (b.time - a.time) as f64 <= b.cost
 }
-fn insert(frontier: &mut Vec<Label>, label: Label, m: &CostModel) -> bool {
+fn insert(frontier: &mut Row<Label>, label: Label, m: &CostModel) -> bool {
     if frontier.iter().any(|a| dominates(a, &label, m)) {
         return false;
     }
+    insert_non_dominated(frontier, label, m);
+    true
+}
+/// Callers already checked dominance before allocating a reconstruction node.
+fn insert_non_dominated(frontier: &mut Row<Label>, label: Label, m: &CostModel) {
+    debug_assert!(!frontier.iter().any(|a| dominates(a, &label, m)));
     frontier.retain(|b| !dominates(&label, b, m));
     frontier.push(label);
-    true
 }
 /// Bounds are rounded down; a small relative guard also protects comparisons across cost-sum orders.
 fn exceeds_bound(cost: f64, incumbent: f64) -> bool {
     cost > incumbent + 1e-10 * (1.0 + incumbent.abs())
+}
+/// A boarding cannot improve the incumbent once even its elapsed-time lower bound is too costly.
+/// Round outwards and retain two extra milliseconds to protect division and time conversion.
+fn departure_limit(
+    time: Time,
+    cost: f64,
+    best: Option<f64>,
+    rate: f64,
+    horizon: Time,
+) -> Option<Time> {
+    let Some(best) = best else {
+        return Some(horizon);
+    };
+    let remaining = best + 1e-10 * (1.0 + best.abs()) - cost;
+    if remaining < 0.0 {
+        return None;
+    }
+    if rate == 0.0 {
+        return Some(horizon);
+    }
+    let extra = (remaining / rate).ceil() + 2.0;
+    Some(
+        time.saturating_add(extra.min(horizon as f64) as Time)
+            .min(horizon),
+    )
 }
 fn cannot_finish(
     cost: f64,
@@ -124,6 +164,39 @@ pub fn route(
     q: &Query,
     m: &CostModel,
     w: &mut Workspace,
+) -> Result<Option<ResultJourney>> {
+    Ok(route_with_budget(t, q, m, w, 0)?.journey)
+}
+/// An incomplete search without a journey is unresolved, never proof that no path exists.
+pub struct SearchOutcome {
+    pub journey: Option<ResultJourney>,
+    pub budget_reached: bool,
+}
+/// Work units count scanned connections and considered transfers. Zero keeps the exact search.
+pub fn route_with_budget(
+    t: &Timetable,
+    q: &Query,
+    m: &CostModel,
+    w: &mut Workspace,
+    budget: usize,
+) -> Result<SearchOutcome> {
+    let mut reached = false;
+    let mut journey = search(t, q, m, w, budget, &mut reached)?;
+    if let Some(result) = &mut journey {
+        result.search_truncated = reached;
+    }
+    Ok(SearchOutcome {
+        journey,
+        budget_reached: reached,
+    })
+}
+fn search(
+    t: &Timetable,
+    q: &Query,
+    m: &CostModel,
+    w: &mut Workspace,
+    budget: usize,
+    reached: &mut bool,
 ) -> Result<Option<ResultJourney>> {
     ensure!(
         m.trip_modes.len() == t.trips.len(),
@@ -159,7 +232,9 @@ pub fn route(
                 m.walk,
                 &q.egress,
                 &q.access,
-                m.search.local_bounds,
+                m.search
+                    .local_bounds
+                    .then_some(m.search.local_bound_settlements),
                 &mut w.bounds,
             );
         } else {
@@ -209,7 +284,7 @@ pub fn route(
     let start = t.connections.partition_point(|c| c.departure < q.departure);
     let mut best: Option<(f64, Time, usize, Label, usize)> = None;
     let mut checked_temporal = false;
-    for round in 1..=q.max_boardings {
+    'rounds: for round in 1..=q.max_boardings {
         stats.boarding_rounds = round;
         w.ready.clear();
         w.next.clear();
@@ -225,6 +300,16 @@ pub fn route(
                 }
                 let transfers = m.index.transfers(stop);
                 for (position, edge) in transfers.iter().enumerate() {
+                    if budget > 0
+                        && stats
+                            .connections_scanned
+                            .saturating_add(stats.transfers_considered)
+                            >= budget
+                    {
+                        *reached = true;
+                        break 'rounds;
+                    }
+
                     if m.search.transfer_blocks
                         && position % 16 == 0
                         && let (Some(incumbent), Some(regional)) = (&best, &m.index.regional)
@@ -304,7 +389,7 @@ pub fn route(
                             arrival: time,
                         },
                     ));
-                    insert(&mut w.ready[to as usize], ready, m);
+                    insert_non_dominated(&mut w.ready[to as usize], ready, m);
                 }
             }
         }
@@ -313,7 +398,24 @@ pub fn route(
             for position in 0..w.ready.active.len() {
                 let stop = w.ready.active[position];
                 if let Some(earliest) = w.ready[stop].iter().map(|label| label.time).min() {
-                    for &id in m.index.local.boardings(t, stop, earliest, horizon) {
+                    // Do not populate the heap with all later services in the two-day horizon.
+                    // Include every label: later, cheaper alternatives can board later services.
+                    let latest = w.ready[stop]
+                        .iter()
+                        .filter_map(|label| {
+                            departure_limit(
+                                label.time,
+                                label.cost,
+                                best.as_ref().map(|b| b.0),
+                                m.min_time_rate,
+                                horizon,
+                            )
+                        })
+                        .max();
+                    let Some(latest) = latest else {
+                        continue;
+                    };
+                    for &id in m.index.local.boardings(t, stop, earliest, latest) {
                         w.scan
                             .activate(t.connections[id as usize].trip as usize, id);
                     }
@@ -325,6 +427,15 @@ pub fn route(
         }
         let mut any = false;
         while let Some(id) = w.scan.next(&m.index.local, t.connections.len()) {
+            if budget > 0
+                && stats
+                    .connections_scanned
+                    .saturating_add(stats.transfers_considered)
+                    >= budget
+            {
+                *reached = true;
+                break 'rounds;
+            }
             let c = &t.connections[id];
             if c.departure > horizon {
                 break;
@@ -467,35 +578,35 @@ pub fn route(
                         arrival: c.arrival,
                     },
                 ));
-                if insert(&mut w.next[c.to as usize], label, m) {
-                    any = true;
-                    stats.labels_improved += 1;
-                    for j in 0..w.targets[c.to as usize].len() {
-                        let (i, walking, _) = w.targets[c.to as usize][j];
-                        let e = &q.egress[i];
-                        let arrival = c.arrival.saturating_add(walking).saturating_add(e.duration);
-                        let cost = label.cost
-                            + (walking as f64 + e.duration as f64) * m.walk
-                            + m.total_dynamic_penalty(round - 1, label.first, c.arrival);
-                        if arrival <= horizon
-                            && best.as_ref().is_none_or(|b| {
-                                cost < b.0 || (cost == b.0 && (round, arrival) < (b.2, b.1))
-                            })
-                        {
-                            let mut destination = label;
-                            if walking > 0 || e.stop != c.to {
-                                destination.path = Some(w.path(
-                                    label.path,
-                                    Leg::Walk {
-                                        from: c.to,
-                                        to: e.stop,
-                                        departure: c.arrival,
-                                        arrival: c.arrival.saturating_add(walking),
-                                    },
-                                ));
-                            }
-                            best = Some((cost, arrival, round, destination, i));
+                insert_non_dominated(&mut w.next[c.to as usize], label, m);
+
+                any = true;
+                stats.labels_improved += 1;
+                for j in 0..w.targets[c.to as usize].len() {
+                    let (i, walking, _) = w.targets[c.to as usize][j];
+                    let e = &q.egress[i];
+                    let arrival = c.arrival.saturating_add(walking).saturating_add(e.duration);
+                    let cost = label.cost
+                        + (walking as f64 + e.duration as f64) * m.walk
+                        + m.total_dynamic_penalty(round - 1, label.first, c.arrival);
+                    if arrival <= horizon
+                        && best.as_ref().is_none_or(|b| {
+                            cost < b.0 || (cost == b.0 && (round, arrival) < (b.2, b.1))
+                        })
+                    {
+                        let mut destination = label;
+                        if walking > 0 || e.stop != c.to {
+                            destination.path = Some(w.path(
+                                label.path,
+                                Leg::Walk {
+                                    from: c.to,
+                                    to: e.stop,
+                                    departure: c.arrival,
+                                    arrival: c.arrival.saturating_add(walking),
+                                },
+                            ));
                         }
+                        best = Some((cost, arrival, round, destination, i));
                     }
                 }
             }
@@ -532,6 +643,7 @@ pub fn route(
     legs.reverse();
     stats.path_nodes = w.arena.len();
     Ok(Some(ResultJourney {
+        search_truncated: false,
         journey: Journey {
             departure: q.departure,
             arrival,
@@ -544,4 +656,19 @@ pub fn route(
         access: q.access[label.access].clone(),
         egress: q.egress[egress].clone(),
     }))
+}
+
+#[cfg(test)]
+mod activation_tests {
+    use super::*;
+    #[test]
+    fn boarding_limits_are_outward_rounded_and_keep_zero_rate_and_large_horizon_cases() {
+        assert_eq!(departure_limit(10, 2., None, 1., 1000), Some(1000));
+        assert_eq!(departure_limit(10, 2., Some(12.), 1., 1000), Some(23));
+        assert_eq!(departure_limit(10, 2., Some(12.), 0., 1000), Some(1000));
+        assert_eq!(departure_limit(10, 20., Some(12.), 1., 1000), None);
+        assert_eq!(departure_limit(10, 2., Some(12.), 1e-300, 1000), Some(1000));
+        assert_eq!(departure_limit(995, 2., Some(12.), 1., 1000), Some(1000));
+        assert!(departure_limit(10, 12., Some(12.), 1., 1000).unwrap() >= 10);
+    }
 }

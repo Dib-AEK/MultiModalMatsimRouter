@@ -53,6 +53,9 @@ local_connections = true
 # Settle exact reverse bounds near the destination; beyond four times the nearest
 # access-stop bound, use that cutoff as a conservative lower bound. No route is excluded.
 local_bounds = true
+# Cap query-local bound preparation; 0 is unlimited. Beyond the settled prefix the
+# last settled cost and shared regional bounds remain admissible. No journey is excluded.
+local_bound_settlements = 1024
 # Prove difficult no-path requests unreachable using a relaxed temporal scan. Runs
 # once only after 2048 improved labels without a feasible incumbent, not on ordinary queries.
 temporal_pruning = true

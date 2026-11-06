@@ -187,3 +187,37 @@ refinement may change cell shape, never allowed journeys. Transfer suffix prunin
 only admissible minima; retain mode-dependent lower bounds only for static costs. Do not call
 these bounds T-REX hard transfer ranks. Validate all acceleration combinations and dense transfer
 lists, including zero-duration walks. Keep the portable JNI protocol unchanged.
+
+## Native coordinate entry point
+MATSim can send four projected coordinates in one JNI call; the native router performs served-stop
+selection, exact walking durations, five bounded radius attempts and direct-walk comparison. Stop
+access/egress times and final Eqasim settings are exported once. The old explicit-endpoint entry
+point and snapshot format remain supported. The coordinate capability has a separate version probe;
+older releases use an explicit Java fallback. Search indexes are shared, never rebuilt per worker.
+The shared core CoordinateIndex also serves Python/C ABI routing. Compact SparseRows use dense u32
+slot lookup and a reusable active-row pool; preserve first-touch order and zero stale labels across
+rounds. Destination-bound memoization is query-local and generation-invalidated. Local Swiss example
+inputs/results must remain ignored. Use eight workers for the current Swiss performance comparisons.
+
+## Query search-work budgets
+`local_bound_settlements` defaults to 1024. It caps only query-local relaxed Dijkstra preparation;
+shared regional preprocessing is exact and uncapped. On interruption, the last settled cost is a
+lower bound for every unsettled vertex. Keep route search unrestricted, with the shared regional
+potential as a complement. 0 removes the settlement-count cap. Differential checks include a one-stop
+budget among 2048 acceleration combinations, and sparse-workspace reuse across budgets.
+Boarding activation uses the incumbent and every ready label's time/cost to bound feasible departure
+times conservatively. Retain zero-rate behavior, outward rounding, ties and later-cheaper labels.
+Remove duplicate dominance probes only where the same frontier was checked before path allocation.
+SmallVec inline storage was tested and discarded: it did not improve Swiss throughput.
+
+## Explicit coordinate-search heuristics
+`coordinate_routing` shares policy and fallback behavior between the generic clients and MATSim JNI.
+Coordinate routing defaults to 2000000 scanned connections/considered transfers per attempt, then
+returns a feasible incumbent marked `search_truncated` if optimality was not proved. This is an
+explicit approximation; never describe it as an admissible pruning rule or silently apply it to the
+exact stop/weighted APIs. A missing incumbent after interruption must trigger an exact fallback.
+Likewise resolve exactly before discarding a truncated incumbent in favor of direct walking.
+Journeys above three hours or a pre-departure gap above 30 minutes trigger candidate expansion up
+to 2000 m, within the existing five attempts. Keep coefficients unchanged. A wider candidate set
+can change results. `Policy::legacy()` disables both heuristics. Record this distinction in benchmarks.
+The detailed JNI coordinate entry point adds a truncation flag; preserve the old entry point's ABI.

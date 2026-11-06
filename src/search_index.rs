@@ -1,6 +1,7 @@
 //! Prepares sorted physical transfers and an optimistic reverse cost graph shared by weighted searches.
 use crate::{cost::SearchOptions, model::*, time::Time};
 use std::{
+    cell::Cell,
     cmp::Ordering,
     collections::{BTreeMap, BinaryHeap},
 };
@@ -54,6 +55,8 @@ impl Ord for QueueEntry {
 /// Reused request-local Dijkstra state; computation is included in query timing, never cached by destination.
 #[derive(Default)]
 pub(crate) struct BoundWorkspace {
+    memo: Vec<Cell<(u32, f64)>>,
+    generation: u32,
     values: Vec<f64>,
     settled: Vec<bool>,
     touched: Vec<usize>,
@@ -63,6 +66,12 @@ pub(crate) struct BoundWorkspace {
 }
 impl BoundWorkspace {
     fn reset(&mut self, n: usize) {
+        self.memo.resize_with(n, || Cell::new((0, 0.)));
+        self.generation = self.generation.wrapping_add(1);
+        if self.generation == 0 {
+            self.memo.iter().for_each(|v| v.set((0, 0.)));
+            self.generation = 1;
+        }
         for i in self.touched.drain(..) {
             self.values[i] = f64::INFINITY;
             self.settled[i] = false;
@@ -122,9 +131,15 @@ impl BoundWorkspace {
         if self.settled[stop as usize] {
             return self.values[stop as usize];
         }
-        regional.map_or(self.limit, |r| {
+        let cached = self.memo[stop as usize].get();
+        if cached.0 == self.generation {
+            return cached.1;
+        }
+        let value = regional.map_or(self.limit, |r| {
             self.limit.max(r.lower(stop, &self.regional_targets))
-        })
+        });
+        self.memo[stop as usize].set((self.generation, value));
+        value
     }
 }
 /// Round each nonnegative relaxed operation down, retaining an optimistic floating-point estimate.
@@ -277,7 +292,7 @@ impl SearchIndex {
         walk: f64,
         targets: &[crate::weighted::Endpoint],
         sources: &[crate::weighted::Endpoint],
-        local: bool,
+        local: Option<usize>,
         w: &mut BoundWorkspace,
     ) -> usize {
         w.reset(n);
@@ -308,7 +323,13 @@ impl SearchIndex {
             }
             w.settled[stop as usize] = true;
             settled += 1;
-            if local && cutoff.is_none() && source_ids.binary_search(&stop).is_ok() {
+            if local.is_some_and(|budget| budget > 0 && settled >= budget) {
+                // Dijkstra's unsettled distances cannot be below the last settled cost.
+                // Stop only the heuristic computation; the actual route search remains unrestricted.
+                w.limit = cost;
+                break;
+            }
+            if local.is_some() && cutoff.is_none() && source_ids.binary_search(&stop).is_ok() {
                 cutoff = Some(cost * 4.0);
             }
             for e in &self.reverse

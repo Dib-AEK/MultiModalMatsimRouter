@@ -1,5 +1,6 @@
 # Excludes generated build products, logs, and local binary timetable caches.
 /target/
+/examples/switzerland/local/
 *.log
 *.mmrt
 

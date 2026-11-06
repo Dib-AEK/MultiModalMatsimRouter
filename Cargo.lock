@@ -630,6 +630,7 @@ dependencies = [
  "jni",
  "mmrouter-service",
  "multimodal-matsim-router",
+ "serde",
  "serde_json",
 ]
 

@@ -137,8 +137,11 @@ impl Engine {
         query: &crate::weighted::Query,
         workspace: &mut crate::weighted::Workspace,
     ) -> Result<Option<crate::weighted::ResultJourney>> {
-        let costs = self
-            .costs
+        crate::weighted::route(&self.timetable, query, self.cost_model()?, workspace)
+    }
+    /// Prepares/borrows the immutable weighted model shared by all workers.
+    pub fn cost_model(&self) -> Result<&crate::cost::CostModel> {
+        self.costs
             .get_or_init(|| {
                 crate::cost::CostModel::with_search_options(
                     &self.timetable,
@@ -147,8 +150,7 @@ impl Engine {
                 )
             })
             .as_ref()
-            .map_err(|error| anyhow::anyhow!("preparing weighted search: {error:#}"))?;
-        crate::weighted::route(&self.timetable, query, costs, workspace)
+            .map_err(|error| anyhow::anyhow!("preparing weighted search: {error:#}"))
     }
     pub fn weighted_index_summary(&self) -> Option<crate::search_index::IndexSummary> {
         self.costs

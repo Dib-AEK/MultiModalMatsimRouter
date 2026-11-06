@@ -29,6 +29,7 @@ pub enum Format {
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Settings {
+    pub policy: multimodal_matsim_router::coordinate_routing::Policy,
     pub search_radius_m: f64,
     pub extension_radius_m: f64,
     pub direct_walk_factor: f64,
@@ -38,6 +39,7 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
+            policy: Default::default(),
             search_radius_m: 1000.,
             extension_radius_m: 200.,
             direct_walk_factor: 1.,
@@ -273,7 +275,25 @@ fn matsim(path: &Path) -> Result<(Config, Settings)> {
         },
         cache: Cache::default(),
     };
+    let native = module(&x, "swissRustRouting");
+    let defaults = multimodal_matsim_router::coordinate_routing::Policy::default();
     let settings = Settings {
+        policy: multimodal_matsim_router::coordinate_routing::Policy {
+            work_budget: native
+                .get("coordinateWorkBudget")
+                .map_or(Ok(defaults.work_budget), |v| v.parse())?,
+            quality_wait_seconds: number(
+                &native,
+                "qualityWaitSeconds",
+                defaults.quality_wait_seconds,
+            )?,
+            quality_journey_seconds: number(
+                &native,
+                "qualityJourneySeconds",
+                defaults.quality_journey_seconds,
+            )?,
+            quality_radius_m: number(&native, "qualityRadiusMeters", defaults.quality_radius_m)?,
+        },
         search_radius_m: number(&tr, "searchRadius", 1000.)?,
         extension_radius_m: number(&tr, "extensionRadius", 200.)?,
         direct_walk_factor: number(&tr, "directWalkFactor", 1.)?,
@@ -485,6 +505,7 @@ pub fn load(path: &str, format: Format, parameters: Value) -> Result<(Config, Se
     {
         *import = path.parent().unwrap_or(Path::new(".")).join(&*import);
     }
+    settings.policy.validate()?;
     config.validate()?;
     Ok((config, settings, is_matsim_config))
 }

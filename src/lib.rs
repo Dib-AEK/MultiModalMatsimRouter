@@ -22,3 +22,7 @@ mod regional_bounds;
 mod temporal_reachability;
 
 mod network_partition;
+
+pub mod coordinate_index;
+
+pub mod coordinate_routing;
