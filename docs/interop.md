@@ -52,7 +52,7 @@ Keep **MultiModalMatsimRouter in a separate repository**, cloned locally as `Mul
 The algorithm, readers, native boundaries, configuration, standalone clients and their tests live
 here. MATSim module bindings, live scenario snapshotting, route reconstruction and mode-choice/cache
 integration remain in eqasim-java. Version/test the router once and consume it from both languages.
-The GitHub repository is `https://github.com/Dib-AEK/MultiModalMatsimRouter`.
+The GitHub repository is `https://github.com/matsim-eth/RustRouter`.
 
 ## Clone and build
 
@@ -61,7 +61,7 @@ helper, and JDK 17+ for the standalone Java client. MATSim itself uses JDK 25. B
 operating system/architecture; a Windows DLL cannot be used as a Linux SO.
 
 ```text
-git clone https://github.com/Dib-AEK/MultiModalMatsimRouter.git MultiModalRouter
+git clone https://github.com/matsim-eth/RustRouter.git MultiModalRouter
 cd MultiModalRouter
 python tools/build.py --test
 python -m pip install -e ./python

@@ -1,8 +1,8 @@
 <!-- Introduces installation and the native-library requirement for the Python client. -->
-# MultiModalMatsimRouter Python client
+# RustRouter Python client
 
 To use without Rust, install a platform wheel from
-[GitHub Releases](https://github.com/Dib-AEK/MultiModalMatsimRouter/releases/latest).
+[GitHub Releases](https://github.com/matsim-eth/RustRouter/releases/latest).
 It includes the native engine; no library path is required. See
 [binary installation](../docs/binary-distribution.md) for supported systems.
 

@@ -2,7 +2,7 @@
 # Ready-to-use binary packages
 
 Download a wheel or platform ZIP from
-[GitHub Releases](https://github.com/Dib-AEK/MultiModalMatsimRouter/releases/latest).
+[GitHub Releases](https://github.com/matsim-eth/RustRouter/releases/latest).
 No Rust/Cargo or C++ compiler is needed. The repository is private, so GitHub login and repository
 access are currently required. This is a GitHub distribution, not a package published to PyPI.
 

@@ -1,5 +1,5 @@
 <!-- Introduces the router, architecture, supported semantics, configuration, and reproducible commands. -->
-# MultiModalMatsimRouter
+# RustRouter
 
 Public-transport routing in Rust, usable from **Python**, **Java**, **MATSim**, or the command line.
 The project provides scheduled routing with walking, waiting, transfers and configurable mode costs,
@@ -8,7 +8,7 @@ using an immutable timetable shared across concurrent routing workers.
 ## Use without Rust
 
 Download a compiled Python wheel or platform ZIP from
-[GitHub Releases](https://github.com/Dib-AEK/MultiModalMatsimRouter/releases/latest).
+[GitHub Releases](https://github.com/matsim-eth/RustRouter/releases/latest).
 Wheels include the native engine; Java jars in the ZIP include JNI. No Rust/Cargo or compiler
 is needed at runtime. See [installation and examples](docs/binary-distribution.md).
 
@@ -19,7 +19,7 @@ standalone Java client. MATSim integration uses JDK **25**. Windows also needs M
 Linux/macOS need their standard native build toolchain. Build on the platform where you will run it.
 
 ```bash
-git clone https://github.com/Dib-AEK/MultiModalMatsimRouter.git MultiModalRouter
+git clone https://github.com/matsim-eth/RustRouter.git MultiModalRouter
 cd MultiModalRouter
 python tools/build.py --test
 python -m pip install -e ./python
